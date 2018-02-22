@@ -1,8 +1,10 @@
 """functions to re-generate Geisler 1984 figures
 """
-import numpy as np
-from scipy.signal import convolve2d
 import warnings
+import itertools
+import numpy as np
+import pandas as pd
+from scipy.signal import convolve2d
 
 
 def get_middle(x):
@@ -151,3 +153,62 @@ def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.14
     """
     photons_absorbed = a*d*s*t*e555 * 347.8 * retinal_image
     return photons_absorbed[receptor_lattice.astype(bool)]
+
+
+def calc_d_prime(alpha, beta):
+    """calculates d prime for two lists of photon absorptions, alpha and beta; equation 3
+    """
+    log_ratio = np.log(beta / alpha)
+    # sometimes there will be nans, which we replace with 0
+    log_ratio[np.isnan(log_ratio)] = 0
+    numerator = np.sum((beta - alpha) * log_ratio)
+    denominator = np.sum((beta + alpha) * log_ratio**2)
+    return numerator / np.sqrt(.5 * denominator)
+
+
+def calc_deltaN(alpha, beta):
+    """calculate deltaN as used in equation 4
+
+    deltaN: average difference in number of effectively absorbed quanta from stimuli alpha and
+    beta, which I'm interpreting to be: $\sum_i(\beta_i - \alpha_i)$ (based on d-prime)
+    """
+    return np.sum(beta - alpha)
+
+
+def calc_N(alpha, beta):
+    """calculate N, as used throughout the text
+
+    N: mean number of quanta per stimulus, which I'm interpreting to be:
+    $\sum_i{\frac{\beta_i+alpha_i}{2}}$ (based on d-prime)
+    """
+    return np.sum((alpha + beta) / 2)
+
+
+def check_intensity_discrimination(alpha, beta):
+    """checks whether d prime reduces to equation 4
+
+    deltaN and N are really confusingly defined in the text, but I think this is what it
+    means.
+    """
+    return abs(calc_deltaN(alpha, beta)) / np.sqrt(calc_N(alpha, beta))
+
+
+def figure4(n_receptors_per_side):
+    lattice, x_min, y_min, x, y = construct_photoreceptor_lattice(n_receptors_per_side)
+    psf = pointspread_function(x, y)
+    lums = np.exp([-1, 0, 1, 2, 3, 4, 5])
+    df = []
+    for l in lums:
+        lum_distr = np.zeros_like(psf)
+        lum_distr[get_middle(y), get_middle(x)] = l
+        retinal = retinal_image(lum_distr, psf)
+        photoreceptor_absorptions = mean_photons_absorbed(retinal, lattice)
+        df.append(pd.DataFrame(
+            {'photons absorbed': photoreceptor_absorptions,
+             'receptor number': range(len(photoreceptor_absorptions)), 'luminance': l,
+             'log luminance': np.log(l)}))
+    df = pd.concat(df)
+    gb = df.groupby('luminance')
+    for l_a, l_b in itertools.combinations(lums, 2):
+        alphas = gb.get_group(l_a)
+        betas = gb.get_group(l_b)
