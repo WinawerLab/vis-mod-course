@@ -193,10 +193,9 @@ def check_intensity_discrimination(alpha, beta):
     return abs(calc_deltaN(alpha, beta)) / np.sqrt(calc_N(alpha, beta))
 
 
-def figure4(n_receptors_per_side):
+def figure4(lums=np.exp([-1, 0, 1, 2, 3, 4, 5]), n_receptors_per_side=5):
     lattice, x_min, y_min, x, y = construct_photoreceptor_lattice(n_receptors_per_side)
     psf = pointspread_function(x, y)
-    lums = np.exp([-1, 0, 1, 2, 3, 4, 5])
     df = []
     for l in lums:
         lum_distr = np.zeros_like(psf)
@@ -208,7 +207,16 @@ def figure4(n_receptors_per_side):
              'receptor number': range(len(photoreceptor_absorptions)), 'luminance': l,
              'log luminance': np.log(l)}))
     df = pd.concat(df)
+    pair_df = []
     gb = df.groupby('luminance')
-    for l_a, l_b in itertools.combinations(lums, 2):
-        alphas = gb.get_group(l_a)
-        betas = gb.get_group(l_b)
+    for i, (l_a, l_b) in enumerate(itertools.combinations(lums, 2)):
+        alphas = gb.get_group(l_a)['photons absorbed'].values
+        betas = gb.get_group(l_b)['photons absorbed'].values
+        N = calc_N(alphas, betas)
+        deltaN = calc_deltaN(alphas, betas)
+        d_prime = calc_d_prime(alphas, betas)
+        pair_df.append(pd.DataFrame(
+            {'luminance_alpha': l_a, 'luminance_beta': l_b, 'N': N, 'deltaN': deltaN,
+             'd_prime': d_prime, 'd_prime_calc_N': deltaN / np.sqrt(N)}, index=[i],
+            ))
+    return df, pd.concat(pair_df)
