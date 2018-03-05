@@ -1,32 +1,31 @@
+%% s_banksetal
+
+% Script to create an ideal observer model based on the article by
 % Banks et al. 1991
 
-% Scene
+% This toolbox requires ISETBio
 
-% Horizontal Gabor patches
-% Presented foveally or along the horizontal meridian
+% SCENE DETAILS:
 
-% Space average luminance - 762 cd/m2
+% - The stimuli are horizontal Gabor patches, presented foveally or along the
+% horizontal meridian
+% 2AFC detection task: One Gabor presented abruptly for 100 ms intervals
+% and one blank screen. Task was to say which interval there was a Gabor
+% - Average luminance = 762 cd/m2
+% - Retinal illuminance was 1348 Td.
+% - Contrast levels were varied between 1-100%
 
-% emmetrope and 0.75-D myope
+% OPTICS DETAILS
+% - Subjects are one emmetrope and one 0.75-D myope
+% - 1.5 mm artificial pupil
+% - OTF was optics diffraction limited and identical at all eccentricities
 
-% 1.5 mm artificial pupil
-
-% Retinal illuminance was 1348 Td.
-
-% 2 100 ms intervals of abrupt onset and offset
-
-% 2AFC detection task, gabor or not.
-
-% contrast varied
-
-% ocular media transmittance, OTF - optics diffraction limited - identical
-% at all eccentricities
-
-% Curcio PR data
+% PHOTORECEPTOR DETAILS
+% - Curcio PR data was used to model cone spacing
 
 
-% SF = 1, then target size is 1.20 cycles per 2SD
-% So 1 SD will be 0.6
+
+
 
 %% Specify experiment parameters
 
@@ -141,33 +140,7 @@ theHexMosaic.window;
 
 
 %%
-spatialFrequencies  = [.25 .4 .65 1 1.6 2.6 4 6.5 8 10 16 26]; % cycles per degree
 
-eccentricities      = [0 2 5 10 20 40];
-
-
-[sf, eccen] = meshgrid(spatialFrequencies, eccentricities);
-numCycles   = [...
-    
-NaN .8 1.05 1.2 1.35 1.5 1.75 1.9 NaN 2.03 2.05 2.05; ...   Fovea
-
-NaN NaN 1 1.3 1.7 2.4 3.2 3.21 NaN 3.79 3.99 4.22; ...      2 deg
-
-1 1.21 1.51 1.71 2.2 2.5 3.4 4.19 NaN 4.8 NaN NaN; ...      5 deg
-
-0.8 1 1.49 2 2.39 3.02 3.99 4.5 4.5 NaN NaN NaN; ...        10 deg
-
-1.7 1.7 1.81 1.90 2 2 2 NaN NaN NaN NaN NaN;  ...           20 deg
-
-1.7 1.7 1.7 1.7 1.7 NaN NaN NaN NaN NaN NaN NaN; ...        40 deg
-
-];
-
-
-
-cycleLength = 1./sf;          % degrees per cycle
-
-sd = cycleLength .* numCycles/2;
 
 
 

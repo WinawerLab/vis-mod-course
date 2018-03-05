@@ -6,7 +6,7 @@ function rootPath = banksRootPath()
 % sub-directories.
 % 
 % Example:
-%   fullfile(banksRootPath,'code')
+%   fullfile(banksRootPath,'scripts')
 
 rootPath=which('fmsRootPath');
 
