@@ -3,9 +3,9 @@ GitHub for code used to implement models discussed in the Computational Models o
 
 The goal of this repository is to create multiple image computionable models of the visual system. We would like to make models that can start with an image (preferably the same), and predict different responses at different stages of the visual system. 
 
-So far, we started replicating computational observer models from the literature.
+So far, we started replicating the following computational observer models from the literature.
 
-Photo receptor:
+Photo receptor level:
 
 (1) Geisler (1984) Physical limits of acuity and hyperacuity. J. Opt. Soc. Am. A
 
