@@ -7,8 +7,8 @@ import pandas as pd
 from scipy.signal import convolve2d
 
 
-def get_middle(x):
-    mid = len(x) / 2
+def get_middle(x, dim=0):
+    mid = x.shape[dim] / 2
     if mid == np.floor(mid):
         warnings.warn("x has no middle index, returning the floor instead")
     return int(np.floor(mid))
@@ -113,7 +113,7 @@ def construct_photoreceptor_lattice(n_receptors_per_side):
     return lattice, x_minutes, y_minutes, x, y
 
 
-def retinal_image(lum, psf):
+def retinal_image_convolution(lum, psf):
     """calculate the retinal image by convolving the luminance distribution with the pointspread
 
     note that you shouldn't interpret the numbers too much in the output from this function,
@@ -126,6 +126,36 @@ def retinal_image(lum, psf):
     # make sure that the image is big enough that we're not throwing anything away.
     retinal_image = convolve2d(lum, psf, mode='same')
     return retinal_image
+
+
+def retinal_image(lum, psf, lum_distance=None, output_shape=None):
+    """calculate retinal image from luminance points
+
+    lum_distance: in pixel, only necessar if more than one lum value
+    """
+    if not hasattr(lum, '__len__') or len(lum) == 1:
+        return lum * psf
+    else:
+        if output_shape is None:
+            retinal_image = np.zeros((psf.shape[0]+lum_distance, psf.shape[1]+lum_distance))
+        else:
+            retinal_image = np.zeros(output_shape)
+        center_0, center_1 = get_middle(retinal_image, 0), get_middle(retinal_image, 1)
+        psf_center_0, psf_center_1 = get_middle(psf, 0), get_middle(psf, 1)
+        lum_distance_half = int(np.floor(lum_distance / 2))
+        if np.mod(psf.shape[0], 2) == 1:
+            floor_factor_0 = 1
+        if np.mod(psf.shape[0], 2) == 0:
+            floor_factor_0 = 0
+        if np.mod(psf.shape[1], 2) == 1:
+            floor_factor_1 = 1
+        if np.mod(psf.shape[1], 2) == 0:
+            floor_factor_1 = 0
+        retinal_image[center_0-psf_center_0:center_0+psf_center_0+floor_factor_0,
+                      center_1-psf_center_1-lum_distance_half:center_1+psf_center_1-lum_distance_half+floor_factor_1] += lum[0] * psf
+        retinal_image[center_0-psf_center_0:center_0+psf_center_0+floor_factor_0,
+                      center_1-psf_center_1+lum_distance_half:center_1+psf_center_1+lum_distance_half+floor_factor_1] += lum[1] * psf
+        return retinal_image
 
 
 def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.1416, t=0.68,
@@ -158,6 +188,8 @@ def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.14
 def calc_d_prime(alpha, beta):
     """calculates d prime for two lists of photon absorptions, alpha and beta; equation 3
     """
+    alpha = np.array(alpha)
+    beta = np.array(beta)
     log_ratio = np.log(beta / alpha)
     # sometimes there will be nans, which we replace with 0
     log_ratio[np.isnan(log_ratio)] = 0
