@@ -169,6 +169,18 @@ def retinal_image(lum, psf, lum_distance=None, output_shape=None):
         return retinal_image
 
 
+def retina_photons_absorbed(retinal_image, receptor_lattice):
+    """return the receptor lattice, with values scaled to show the amount of photons absorbed
+    """
+    if retinal_image.shape != receptor_lattice.shape:
+        dim0 = (receptor_lattice.shape[0] - retinal_image.shape[0]) / 2.
+        dim1 = (receptor_lattice.shape[1] - retinal_image.shape[1]) / 2.
+        retinal_image = np.pad(retinal_image, ((int(np.ceil(dim0)), int(np.floor(dim0))),
+                                               (int(np.ceil(dim1)), int(np.floor(dim1)))),
+                               'constant')
+    return retinal_image * receptor_lattice
+
+
 def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.1416, t=0.68,
                           e555=0.5):
     """mean number of photons absorbed (eqt 2)
@@ -272,9 +284,16 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     for a in lum_a:
         solt = optimize_intensity_discrimination_task(a, d_prime)
         solts.append(intensity_discrimination_task(a, solt.x))
-    plot_solts = np.log2(np.array(solts)[:, 1:])
-    plt.plot(plot_solts[:, 0], plot_solts[:, 1])
-    plt.plot([1, 5], [.697, 2.68], '--')
+    plot_solts = np.log(np.array(solts)[:, 1:])
+    plt.plot(plot_solts[:, 0], plot_solts[:, 1], label='Our solution', zorder=3)
+    plt.plot([1, 5], [.697, 2.68], label='Geisler, 1984')
+    x = np.arange(0, np.exp(6))
+    y = 1.36 * np.sqrt(x)
+    plt.plot(np.log(x), np.log(y), 'k--', label='$\Delta N = 1.36\sqrt{N}$')
+    plt.legend()
+    plt.xlabel('LOG N')
+    plt.ylabel('LOG $\Delta$N')
+    plt.title('INTENSITY DISCRIMINATION')
     return solts
 
 
@@ -283,14 +302,14 @@ def resolution_task(deltaTheta, lum=4):
 
     deltaTheta: in units of arc-minutes
     """
+    rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5 + deltaTheta))
     psf = pointspread_function()
-    rec_lattice, _, _, _, _ = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5 + deltaTheta))
     ret_im_a = retinal_image(lum, psf)
     min_per_pix = .02
     deltaThetaPix = int(deltaTheta / min_per_pix)
     ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix)
     absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
     absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
-    return absorbed_a, absorbed_b
+    return ret_im_a, ret_im_b, rec_lattice, x_minutes, y_minutes
     return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
             deltaTheta)
