@@ -115,6 +115,37 @@ def construct_photoreceptor_lattice(n_receptors_per_side):
     return lattice, x_minutes, y_minutes, x, y
 
 
+def visualize_receptor_lattice(lattice, x, y, mode='continuous', **kwargs):
+    """visualize the receptor lattice
+
+    using imshow doesn't work very well, because our receptors are only single pixels, they easily
+    get lost.
+
+    x and y are the arrays returned by construct_photoreceptor_lattice
+
+    mode: {'continuous', 'binary', 'categorical'}. only considered if the lattice we get has values
+    other than 0 and 1. in that case, if binary we plot points anywhere there's a non-zero value,
+    all the same color (set by the kwarg 'c', default black). if continuous, we use the color to
+    show what value. if categorical, we need a cmap (dictionary) that maps between the non-zero
+    values found in lattice and colors to plot with (by default we use {-1: 'red', 1: 'blue', 2:
+    'green'}, but you probably want to specify a better one).
+    """
+    rec_pos = np.where(lattice)
+    if not ((lattice == 0) | (lattice == 1)).all() and mode == 'continuous':
+        # then this isn't just 0s and 1s, and we need to grab colors
+        c = lattice[rec_pos]
+    elif not ((lattice == 0) | (lattice == 1)).all() and mode == 'categorical':
+        cmap = kwargs.pop('cmap', {-1: 'red', 1: 'blue', 2: 'green'})
+        c = [cmap[i] for i in lattice[rec_pos]]
+    else:
+        c = kwargs.pop('c', 'k')
+    ax = kwargs.pop('ax', plt.gca())
+    plotted = ax.scatter(x[rec_pos[1]], y[rec_pos[0]], c=c, **kwargs)
+    ax.set_xlim((x.min(), x.max()))
+    ax.set_ylim((y.min(), y.max()))
+    return plotted
+
+
 def minutes_to_n_receptors(arcmin_diam):
     """given the size of an image in minutes, return the number of receptors necessary to have a
     receptor lattice that is larger
@@ -310,6 +341,6 @@ def resolution_task(deltaTheta, lum=4):
     ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix)
     absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
     absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
-    return ret_im_a, ret_im_b, rec_lattice, x_minutes, y_minutes
+    return ret_im_a, ret_im_b, rec_lattice, x, y
     return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
             deltaTheta)
