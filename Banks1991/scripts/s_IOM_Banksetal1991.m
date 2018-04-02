@@ -136,6 +136,9 @@ whichEye = 'left';
 deg2m    = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
 polAng   = 0;
 
+alpha_absorptions = cell(length(eccentricities));
+beta_absorptions = alpha_absorptions;
+
 for eccen = eccentricities
     
     % Compute x,y position in m of center of retinal patch from ecc and angle
@@ -153,7 +156,7 @@ for eccen = eccentricities
     cMosaic.setSizeToFOV(regMosaicParams.cmFOV);
     
     % Add photon noise
-    cMosaic.noiseFlag = 'random'; % 'random' 'frozen' 'none'
+    cMosaic.noiseFlag = 'frozen'; % 'random' 'frozen' 'none'
     
     % Not sure why these have to match, but there is a bug if they don't.
     cMosaic.integrationTime = ois(1).timeStep;
@@ -166,8 +169,7 @@ for eccen = eccentricities
         'em', regMosaicParams.em);
     cMosaic.emPositions = emPaths;
    
-    alpha_absorptions = NaN(nTrials,cMosaic.rows, cMosaic.cols, size(emPaths,2), length(contrastLevels));
-    beta_absorptions = alpha_absorptions;
+
 
     
     for c = contrastLevels
