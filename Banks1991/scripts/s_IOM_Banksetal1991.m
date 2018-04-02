@@ -27,8 +27,12 @@
 % PHOTORECEPTOR DETAILS - Curcio PR data was used to model inner cone
 % segments
 
-% NEXT STEPS / TO DO: - Change pupil size to 1.5 mm - Figure out trade off
-% mosaic resampling versus computing time
+% NEXT STEPS / TO DO:
+% - Change pupil size to 1.5 mm
+% - Figure out trade off mosaic resampling versus computing time
+% - Related: how do we match scene FoV and stim size with cone mosaic FoV?
+% - How to calculate d'? Do we sum or average over time?
+
 
 % Recompute Figure 3, as follows: For a given eccentricity (say 10 degrees)
 % and spatial frequency (say 8 cpd)
@@ -154,14 +158,18 @@ for eccen = eccentricities
     % Not sure why these have to match, but there is a bug if they don't.
     cMosaic.integrationTime = ois(1).timeStep;
     
-    % There are no eyemovements, but I think you need to have these in
-    % order to get time varying absorption rates
+    % There are no eyemovements, but I think you need to have emPaths defined in
+    % order to get time varying absorption rates (because it's an oisSequence)
     regMosaicParams.em        = emCreate;
     regMosaicParams.em.emFlag =  [0 0 0]';
     emPaths  = cMosaic.emGenSequence(length(tSamples), 'nTrials', nTrials, ...
         'em', regMosaicParams.em);
     cMosaic.emPositions = emPaths;
    
+    alpha_absorptions = NaN(nTrials,cMosaic.rows, cMosaic.cols, size(emPaths,2), length(contrastLevels));
+    beta_absorptions = alpha_absorptions;
+
+    
     for c = contrastLevels
         
         % recompute stim for particular contrast
@@ -188,6 +196,12 @@ for eccen = eccentricities
     end
 end
 
+
+%% Visualize cone mosaic absorptions
+cMosaic.window;
+
+
+
 %% Calculate d prime
 
 dPrimeFunction1 = @(alpha, beta) ((nansum( (beta(:)-alpha(:)) .* log(beta(:)./alpha(:))) ./ ...
@@ -196,6 +210,9 @@ dPrimeFunction1 = @(alpha, beta) ((nansum( (beta(:)-alpha(:)) .* log(beta(:)./al
 dPrimeFunction2 = @(alpha, beta) ((nanmean(beta(:)-alpha(:)))./sqrt(nanmean(beta(:))));
                   
 dPrimeFunction3 = @(alpha, beta) (1.36*sqrt(nanmean(beta(:))));
+
+d_prime1 = zeros(length(eccentricities), length(contrastLevels));
+d_prime2 = d_prime1; d_prime3 = d_prime1;
 
 for eccen = eccentricities
     for c=contrastLevels
