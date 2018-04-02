@@ -5,10 +5,12 @@ import itertools
 import numpy as np
 import pandas as pd
 from scipy.signal import convolve2d
+from scipy import optimize
+import matplotlib.pyplot as plt
 
 
-def get_middle(x):
-    mid = len(x) / 2
+def get_middle(x, dim=0):
+    mid = x.shape[dim] / 2
     if mid == np.floor(mid):
         warnings.warn("x has no middle index, returning the floor instead")
     return int(np.floor(mid))
@@ -113,7 +115,47 @@ def construct_photoreceptor_lattice(n_receptors_per_side):
     return lattice, x_minutes, y_minutes, x, y
 
 
-def retinal_image(lum, psf):
+def visualize_receptor_lattice(lattice, x, y, mode='continuous', **kwargs):
+    """visualize the receptor lattice
+
+    using imshow doesn't work very well, because our receptors are only single pixels, they easily
+    get lost.
+
+    x and y are the arrays returned by construct_photoreceptor_lattice
+
+    mode: {'continuous', 'binary', 'categorical'}. only considered if the lattice we get has values
+    other than 0 and 1. in that case, if binary we plot points anywhere there's a non-zero value,
+    all the same color (set by the kwarg 'c', default black). if continuous, we use the color to
+    show what value. if categorical, we need a cmap (dictionary) that maps between the non-zero
+    values found in lattice and colors to plot with (by default we use {-1: 'red', 1: 'blue', 2:
+    'green'}, but you probably want to specify a better one).
+    """
+    rec_pos = np.where(lattice)
+    if not ((lattice == 0) | (lattice == 1)).all() and mode == 'continuous':
+        # then this isn't just 0s and 1s, and we need to grab colors
+        c = lattice[rec_pos]
+    elif not ((lattice == 0) | (lattice == 1)).all() and mode == 'categorical':
+        cmap = kwargs.pop('cmap', {-1: 'red', 1: 'blue', 2: 'green'})
+        c = [cmap[i] for i in lattice[rec_pos]]
+    else:
+        c = kwargs.pop('c', 'k')
+    ax = kwargs.pop('ax', plt.gca())
+    plotted = ax.scatter(x[rec_pos[1]], y[rec_pos[0]], c=c, **kwargs)
+    ax.set_xlim((x.min(), x.max()))
+    ax.set_ylim((y.min(), y.max()))
+    return plotted
+
+
+def minutes_to_n_receptors(arcmin_diam):
+    """given the size of an image in minutes, return the number of receptors necessary to have a
+    receptor lattice that is larger
+    """
+    # this is approximately (.6/2)*tan(pi/3)
+    receptor_height_offset = .52
+    return np.ceil(arcmin_diam / receptor_height_offset) + 1
+
+
+def retinal_image_convolution(lum, psf):
     """calculate the retinal image by convolving the luminance distribution with the pointspread
 
     note that you shouldn't interpret the numbers too much in the output from this function,
@@ -126,6 +168,48 @@ def retinal_image(lum, psf):
     # make sure that the image is big enough that we're not throwing anything away.
     retinal_image = convolve2d(lum, psf, mode='same')
     return retinal_image
+
+
+def retinal_image(lum, psf, lum_distance=None, output_shape=None):
+    """calculate retinal image from luminance points
+
+    lum_distance: in pixel, only necessar if more than one lum value
+    """
+    if not hasattr(lum, '__len__') or len(lum) == 1:
+        return lum * psf
+    else:
+        if output_shape is None:
+            retinal_image = np.zeros((psf.shape[0]+lum_distance, psf.shape[1]+lum_distance))
+        else:
+            retinal_image = np.zeros(output_shape)
+        center_0, center_1 = get_middle(retinal_image, 0), get_middle(retinal_image, 1)
+        psf_center_0, psf_center_1 = get_middle(psf, 0), get_middle(psf, 1)
+        lum_distance_half = int(np.floor(lum_distance / 2))
+        if np.mod(psf.shape[0], 2) == 1:
+            floor_factor_0 = 1
+        if np.mod(psf.shape[0], 2) == 0:
+            floor_factor_0 = 0
+        if np.mod(psf.shape[1], 2) == 1:
+            floor_factor_1 = 1
+        if np.mod(psf.shape[1], 2) == 0:
+            floor_factor_1 = 0
+        retinal_image[center_0-psf_center_0:center_0+psf_center_0+floor_factor_0,
+                      center_1-psf_center_1-lum_distance_half:center_1+psf_center_1-lum_distance_half+floor_factor_1] += lum[0] * psf
+        retinal_image[center_0-psf_center_0:center_0+psf_center_0+floor_factor_0,
+                      center_1-psf_center_1+lum_distance_half:center_1+psf_center_1+lum_distance_half+floor_factor_1] += lum[1] * psf
+        return retinal_image
+
+
+def retina_photons_absorbed(retinal_image, receptor_lattice):
+    """return the receptor lattice, with values scaled to show the amount of photons absorbed
+    """
+    if retinal_image.shape != receptor_lattice.shape:
+        dim0 = (receptor_lattice.shape[0] - retinal_image.shape[0]) / 2.
+        dim1 = (receptor_lattice.shape[1] - retinal_image.shape[1]) / 2.
+        retinal_image = np.pad(retinal_image, ((int(np.ceil(dim0)), int(np.floor(dim0))),
+                                               (int(np.ceil(dim1)), int(np.floor(dim1)))),
+                               'constant')
+    return retinal_image * receptor_lattice
 
 
 def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.1416, t=0.68,
@@ -151,6 +235,12 @@ def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.14
     values. this list contains the "mean photons absorbed" or alpha_i values for all photoreceptors
     i.
     """
+    if retinal_image.shape != receptor_lattice.shape:
+        dim0 = (receptor_lattice.shape[0] - retinal_image.shape[0]) / 2.
+        dim1 = (receptor_lattice.shape[1] - retinal_image.shape[1]) / 2.
+        retinal_image = np.pad(retinal_image, ((int(np.ceil(dim0)), int(np.floor(dim0))),
+                                               (int(np.ceil(dim1)), int(np.floor(dim1)))),
+                               'constant')
     photons_absorbed = a*d*s*t*e555 * 347.8 * retinal_image
     return photons_absorbed[receptor_lattice.astype(bool)]
 
@@ -158,9 +248,12 @@ def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.14
 def calc_d_prime(alpha, beta):
     """calculates d prime for two lists of photon absorptions, alpha and beta; equation 3
     """
+    alpha = np.array(alpha)
+    beta = np.array(beta)
     log_ratio = np.log(beta / alpha)
     # sometimes there will be nans, which we replace with 0
     log_ratio[np.isnan(log_ratio)] = 0
+    log_ratio[np.isinf(log_ratio)] = 0
     numerator = np.sum((beta - alpha) * log_ratio)
     denominator = np.sum((beta + alpha) * log_ratio**2)
     return numerator / np.sqrt(.5 * denominator)
@@ -193,30 +286,61 @@ def check_intensity_discrimination(alpha, beta):
     return abs(calc_deltaN(alpha, beta)) / np.sqrt(calc_N(alpha, beta))
 
 
-def figure4(lums=np.exp([-1, 0, 1, 2, 3, 4, 5]), n_receptors_per_side=5):
-    lattice, x_min, y_min, x, y = construct_photoreceptor_lattice(n_receptors_per_side)
-    psf = pointspread_function(x, y)
-    df = []
-    for l in lums:
-        lum_distr = np.zeros_like(psf)
-        lum_distr[get_middle(y), get_middle(x)] = l
-        retinal = retinal_image(lum_distr, psf)
-        photoreceptor_absorptions = mean_photons_absorbed(retinal, lattice)
-        df.append(pd.DataFrame(
-            {'photons absorbed': photoreceptor_absorptions,
-             'receptor number': range(len(photoreceptor_absorptions)), 'luminance': l,
-             'log luminance': np.log(l)}))
-    df = pd.concat(df)
-    pair_df = []
-    gb = df.groupby('luminance')
-    for i, (l_a, l_b) in enumerate(itertools.combinations(lums, 2)):
-        alphas = gb.get_group(l_a)['photons absorbed'].values
-        betas = gb.get_group(l_b)['photons absorbed'].values
-        N = calc_N(alphas, betas)
-        deltaN = calc_deltaN(alphas, betas)
-        d_prime = calc_d_prime(alphas, betas)
-        pair_df.append(pd.DataFrame(
-            {'luminance_alpha': l_a, 'luminance_beta': l_b, 'N': N, 'deltaN': deltaN,
-             'd_prime': d_prime, 'd_prime_calc_N': deltaN / np.sqrt(N)}, index=[i],
-            ))
-    return df, pd.concat(pair_df)
+def intensity_discrimination_task(lum_a, lum_b):
+    """run the intensity discrimination task
+    """
+    psf = pointspread_function()
+    rec_lattice, _, _, _, _ = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5))
+    ret_im_a = retinal_image(lum_a, psf)
+    ret_im_b = retinal_image(lum_b, psf)
+    absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
+    absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
+    return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
+            calc_deltaN(absorbed_a, absorbed_b))
+
+
+def optimize_intensity_discrimination_task(lum_a, d_prime=1.36):
+    bounds = [(lum_a, np.inf)]
+    def obj_func(lum_b):
+        return np.square(intensity_discrimination_task(lum_a, lum_b)[0] - d_prime)
+    return optimize.minimize(obj_func, lum_a+.01, bounds=bounds)
+
+
+def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
+    """recreate figure 4
+
+    d_prime=1.15 seems to get the best match to the Banks data.
+    """
+    solts = []
+    for a in lum_a:
+        solt = optimize_intensity_discrimination_task(a, d_prime)
+        solts.append(intensity_discrimination_task(a, solt.x))
+    plot_solts = np.log(np.array(solts)[:, 1:])
+    plt.plot(plot_solts[:, 0], plot_solts[:, 1], label='Our solution', zorder=3)
+    plt.plot([1, 5], [.697, 2.68], label='Geisler, 1984')
+    x = np.arange(0, np.exp(6))
+    y = 1.36 * np.sqrt(x)
+    plt.plot(np.log(x), np.log(y), 'k--', label='$\Delta N = 1.36\sqrt{N}$')
+    plt.legend()
+    plt.xlabel('LOG N')
+    plt.ylabel('LOG $\Delta$N')
+    plt.title('INTENSITY DISCRIMINATION')
+    return solts
+
+
+def resolution_task(deltaTheta, lum=4):
+    """run the resolution task
+
+    deltaTheta: in units of arc-minutes
+    """
+    rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5 + deltaTheta))
+    psf = pointspread_function()
+    ret_im_a = retinal_image(lum, psf)
+    min_per_pix = .02
+    deltaThetaPix = int(deltaTheta / min_per_pix)
+    ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix)
+    absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
+    absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
+    return ret_im_a, ret_im_b, rec_lattice, x, y
+    return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
+            deltaTheta)
