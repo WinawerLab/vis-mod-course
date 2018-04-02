@@ -190,8 +190,12 @@ end
 
 %% Calculate d prime
 
-dPrimeFunction = @(a, b) ((nansum( (beta(:)-alpha(:)) .* log(beta(:)./alpha(:))) ./ ...
+dPrimeFunction1 = @(alpha, beta) ((nansum( (beta(:)-alpha(:)) .* log(beta(:)./alpha(:))) ./ ...
                                 sqrt(0.5* nansum( (beta(:)+alpha(:)) .* log( (beta(:)./alpha(:)).^2 ))))); 
+
+dPrimeFunction2 = @(alpha, beta) ((nanmean(beta(:)-alpha(:)))./sqrt(nanmean(beta(:))));
+                  
+dPrimeFunction3 = @(alpha, beta) (1.36*sqrt(nanmean(beta(:))));
 
 for eccen = eccentricities
     for c=contrastLevels
@@ -199,12 +203,23 @@ for eccen = eccentricities
         this_alpha = squeeze(mean(alpha_absorptions{eccen==eccentricities}(1,:,:,:,c==contrastLevels),4));
         this_beta = squeeze(mean(beta_absorptions{eccen==eccentricities}(1,:,:,:,c==contrastLevels),4));
         
-        d_prime(eccen==eccentricities,c==contrastLevels) = dPrimeFunction(this_alpha,this_beta);
-        
+        d_prime1(eccen==eccentricities,c==contrastLevels) = dPrimeFunction1(this_alpha,this_beta);
+        d_prime2(eccen==eccentricities,c==contrastLevels) = dPrimeFunction2(this_alpha,this_beta);
+        d_prime3(eccen==eccentricities,c==contrastLevels) = dPrimeFunction3(this_alpha,this_beta);
     end
 end
 
+figure;
+subplot(311); plot(contrastLevels, d_prime1); 
+xlabel('Contrast (Michelson)')
+ylabel('D prime'); title('Calculation using Log likelihood')
+subplot(312); plot(contrastLevels, d_prime2);
+xlabel('Contrast (Michelson)')
+ylabel('D prime'); title('Calculation using delta N / sqrt(N)')
 
+subplot(313); plot(contrastLevels, d_prime3);
+xlabel('Contrast (Michelson)')
+ylabel('D prime'); title('Calculation using 1.36*sqrt(N)')
 
 return
 
