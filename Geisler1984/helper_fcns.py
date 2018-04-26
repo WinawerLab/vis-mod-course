@@ -193,22 +193,44 @@ def retinal_image(lum, psf, lum_distance=None, output_shape=None):
             floor_factor_1 = 1
         if np.mod(psf.shape[1], 2) == 0:
             floor_factor_1 = 0
-        retinal_image[center_0-psf_center_0:center_0+psf_center_0+floor_factor_0,
-                      center_1-psf_center_1-lum_distance_half:center_1+psf_center_1-lum_distance_half+floor_factor_1] += lum[0] * psf
-        retinal_image[center_0-psf_center_0:center_0+psf_center_0+floor_factor_0,
-                      center_1-psf_center_1+lum_distance_half:center_1+psf_center_1+lum_distance_half+floor_factor_1] += lum[1] * psf
+        ymin = center_0 - psf_center_0
+        ymax = center_0 + psf_center_0 + floor_factor_0
+        xmin0 = center_1 - psf_center_1 - lum_distance_half
+        xmax0 = center_1 + psf_center_1 - lum_distance_half + floor_factor_1
+        xmin1 = center_1 - psf_center_1 + lum_distance_half
+        xmax1 = center_1 + psf_center_1 + lum_distance_half + floor_factor_1
+        lum0 = lum[0] * psf
+        lum1 = lum[1] * psf
+        if xmin0 < 0:
+            lum0 = lum0[:, -xmin0:]
+            lum0 = np.pad(lum0, ((0, 0), (0, -xmin0)), 'constant')
+            xmax0 += -xmin0
+            xmin0 = 0
+        elif xmax0 > retinal_image.shape[1]:
+            end_offset = retinal_image.shape[1]-(xmax0+1)
+            lum0 = lum0[:, :end_offset]
+            lum0 = np.pad(lum0, ((0, 0), (-end_offset, 0)), 'constant')
+            xmin0 += end_offset + 1
+            xmax0 = retinal_image.shape[1]
+        if xmin1 < 0:
+            lum1 = lum1[:, -xmin0:]
+            lum1 = np.pad(lum1, ((0, 0), (0, -xmin1)), 'constant')
+            xmax1 += -xmin1
+            xmin1 = 0
+        elif xmax1 > retinal_image.shape[1]:
+            end_offset = retinal_image.shape[1]-(xmax1+1)
+            lum1 = lum1[:, :end_offset]
+            lum1 = np.pad(lum1, ((0, 0), (-end_offset, 0)), 'constant')
+            xmin1 += end_offset + 1
+            xmax1 = retinal_image.shape[1]
+        retinal_image[ymin:ymax, xmin0:xmax0] += lum0
+        retinal_image[ymin:ymax, xmin1:xmax1] += lum1
         return retinal_image
 
 
 def retina_photons_absorbed(retinal_image, receptor_lattice):
     """return the receptor lattice, with values scaled to show the amount of photons absorbed
     """
-    if retinal_image.shape != receptor_lattice.shape:
-        dim0 = (receptor_lattice.shape[0] - retinal_image.shape[0]) / 2.
-        dim1 = (receptor_lattice.shape[1] - retinal_image.shape[1]) / 2.
-        retinal_image = np.pad(retinal_image, ((int(np.ceil(dim0)), int(np.floor(dim0))),
-                                               (int(np.ceil(dim1)), int(np.floor(dim1)))),
-                               'constant')
     return retinal_image * receptor_lattice
 
 
@@ -235,12 +257,6 @@ def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.14
     values. this list contains the "mean photons absorbed" or alpha_i values for all photoreceptors
     i.
     """
-    if retinal_image.shape != receptor_lattice.shape:
-        dim0 = (receptor_lattice.shape[0] - retinal_image.shape[0]) / 2.
-        dim1 = (receptor_lattice.shape[1] - retinal_image.shape[1]) / 2.
-        retinal_image = np.pad(retinal_image, ((int(np.ceil(dim0)), int(np.floor(dim0))),
-                                               (int(np.ceil(dim1)), int(np.floor(dim1)))),
-                               'constant')
     photons_absorbed = a*d*s*t*e555 * 347.8 * retinal_image
     return photons_absorbed[receptor_lattice.astype(bool)]
 
@@ -251,9 +267,9 @@ def calc_d_prime(alpha, beta):
     alpha = np.array(alpha)
     beta = np.array(beta)
     log_ratio = np.log(beta / alpha)
-    # sometimes there will be nans, which we replace with 0
-    log_ratio[np.isnan(log_ratio)] = 0
-    log_ratio[np.isinf(log_ratio)] = 0
+    if np.all(log_ratio == 0):
+        # in this case, all absorptions are identical and so there's no information to use
+        return 0
     numerator = np.sum((beta - alpha) * log_ratio)
     denominator = np.sum((beta + alpha) * log_ratio**2)
     return numerator / np.sqrt(.5 * denominator)
@@ -289,8 +305,8 @@ def check_intensity_discrimination(alpha, beta):
 def intensity_discrimination_task(lum_a, lum_b):
     """run the intensity discrimination task
     """
-    psf = pointspread_function()
-    rec_lattice, _, _, _, _ = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5))
+    rec_lattice, _, _, x, y = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5))
+    psf = pointspread_function(x, y)
     ret_im_a = retinal_image(lum_a, psf)
     ret_im_b = retinal_image(lum_b, psf)
     absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
@@ -334,13 +350,13 @@ def resolution_task(deltaTheta, lum=4):
     deltaTheta: in units of arc-minutes
     """
     rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5 + deltaTheta))
-    psf = pointspread_function()
+    psf = pointspread_function(x, y)
     ret_im_a = retinal_image(lum, psf)
     min_per_pix = .02
     deltaThetaPix = int(deltaTheta / min_per_pix)
-    ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix)
+    ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix, psf.shape)
     absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
     absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
-    return ret_im_a, ret_im_b, rec_lattice, x, y
+    # return ret_im_a, ret_im_b, rec_lattice, x, y
     return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
             deltaTheta)
