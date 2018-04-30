@@ -6,7 +6,11 @@ import numpy as np
 import pandas as pd
 from scipy.signal import convolve2d
 from scipy import optimize
+from scipy import interpolate
 import matplotlib.pyplot as plt
+
+
+MIN_PER_PIX = .02
 
 
 def get_middle(x, dim=0):
@@ -54,7 +58,7 @@ def pointspread_function(x=np.linspace(-4.25, 4.25, 101), y=np.linspace(-4.25, 4
     return psf / np.trapz(np.trapz(psf, x), y)
 
 
-def construct_photoreceptor_lattice(n_receptors_per_side):
+def construct_photoreceptor_lattice(n_receptors_per_side, scale_factor=0):
     """construct hexagonal photoreceptor lattice with specified number of receptors
 
     in the paper, the receptors are modeled as points in a hexagonal lattice, with each point
@@ -85,6 +89,11 @@ def construct_photoreceptor_lattice(n_receptors_per_side):
     (the extra `+.02` is there because of how python's range / numpy.arange works: they go up to
     but don't include the max value, so we set it one step beyond the max value we actually want)
 
+    scale_factor: int. power of 2 by which to scale up the receptor lattice. If the minutes per
+    pixel is .02, we don't always have a fine enough sampling to find the correct dprime value. so
+    we need to scale it up (changing min_per_pix to .02 / 2 = .01 or .02 / 4 = .005) in order to
+    get a better sampling.
+
     returns lattice, x_minutes, y_minutes, x, y. x/y_minutes are the number of minutes on either
     side of 0 in the created lattice (so, from example above, 1.36 and 1.04, respectively). x and y
     are the arrays that go from -x/y_minutes to +x/y_minutes and are necessary when calling the
@@ -93,7 +102,7 @@ def construct_photoreceptor_lattice(n_receptors_per_side):
     receptor_diameter = .6
     # this is approximately (.6/2)*tan(pi/3)
     receptor_height_offset = .52
-    min_per_pix = .02
+    min_per_pix = MIN_PER_PIX / 2**scale_factor
     x_minutes = ((n_receptors_per_side - 1) * receptor_diameter + (receptor_diameter / 2.)) / 2
     y_minutes = ((n_receptors_per_side - 1) * receptor_height_offset) / 2
     if int(x_minutes / min_per_pix) != (x_minutes / min_per_pix):
@@ -331,12 +340,12 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     for a in lum_a:
         solt = optimize_intensity_discrimination_task(a, d_prime)
         solts.append(intensity_discrimination_task(a, solt.x))
-    plot_solts = np.log(np.array(solts)[:, 1:])
+    plot_solts = np.log10(np.array(solts)[:, 1:])
     plt.plot(plot_solts[:, 0], plot_solts[:, 1], label='Our solution', zorder=3)
     plt.plot([1, 5], [.697, 2.68], label='Geisler, 1984')
     x = np.arange(0, np.exp(6))
     y = 1.36 * np.sqrt(x)
-    plt.plot(np.log(x), np.log(y), 'k--', label='$\Delta N = 1.36\sqrt{N}$')
+    plt.plot(np.log10(x), np.log10(y), 'k--', label='$\Delta N = 1.36\sqrt{N}$')
     plt.legend()
     plt.xlabel('LOG N')
     plt.ylabel('LOG $\Delta$N')
@@ -344,19 +353,76 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     return solts
 
 
-def resolution_task(deltaTheta, lum=4):
+def resolution_task(deltaTheta, lum=4, scale_factor=0):
     """run the resolution task
 
     deltaTheta: in units of arc-minutes
     """
-    rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5 + deltaTheta))
+    rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(
+        minutes_to_n_receptors(8.5 + deltaTheta), scale_factor)
     psf = pointspread_function(x, y)
     ret_im_a = retinal_image(lum, psf)
-    min_per_pix = .02
+    min_per_pix = MIN_PER_PIX / 2**scale_factor
     deltaThetaPix = int(deltaTheta / min_per_pix)
     ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix, psf.shape)
     absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
     absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
     # return ret_im_a, ret_im_b, rec_lattice, x, y
     return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
-            deltaTheta)
+            deltaThetaPix * min_per_pix)
+
+
+def optimize_resolution_task(lum, d_prime_target=1.36, init_deltaThetaPix=100, init_step_size=8,
+                             scale_factor=0):
+    """optimize resolution task.
+
+    this uses a custom loop because we have a discrete, convex function
+
+    init_deltaTheta is in units of pixels
+
+    returns deltaTheta in units of arc-minutes
+    """
+    min_per_pix = MIN_PER_PIX / 2**scale_factor
+    def res_task(deltaThetaPix):
+        return resolution_task(deltaThetaPix * min_per_pix, lum, scale_factor)
+    current_dprime = res_task(init_deltaThetaPix)[0]
+    loss = current_dprime - d_prime_target
+    current_loss_sign = {True: 1, False: -1}.get(loss > 0)
+    current_deltaThetaPix = init_deltaThetaPix
+    step_size = int(init_step_size)
+    # print(current_deltaThetaPix, loss, res_task(current_deltaThetaPix))
+    while step_size >= 1:
+        while {True: 1, False: -1}.get(loss > 0) == current_loss_sign:
+            current_deltaThetaPix -= step_size * current_loss_sign
+            if current_deltaThetaPix <= 0:
+                current_deltaThetaPix = 1
+            solt = res_task(current_deltaThetaPix)[0]
+            loss = solt - d_prime_target
+            # print(current_deltaThetaPix, loss, res_task(current_deltaThetaPix))
+        current_loss_sign = {True: 1, False: -1}.get(loss > 0)
+        step_size = int(step_size / 2.)
+    deltaThetasPix = [current_deltaThetaPix-1, current_deltaThetaPix, current_deltaThetaPix+1]
+    dprimes = [res_task(i)[0] for i in deltaThetasPix]
+    f = interpolate.interp1d(x=dprimes, y=deltaThetasPix)
+    deltaThetaMin = f(d_prime_target) * min_per_pix
+    print("Interpolated delta theta %s" % deltaThetaMin)
+    return resolution_task(deltaThetaMin, lum, scale_factor)
+
+
+def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor=0):
+    solts = []
+    for l in lum:
+        solts.append(optimize_resolution_task(l, d_prime, init_step_size=8*(2**scale_factor),
+                                              scale_factor=scale_factor))
+    solts = np.array(solts)
+    # this returns deltaTheta in arc-minutes, we want it in arc-seconds
+    plt.semilogy(np.log10(solts[:, 1]), solts[:, 2] * 60, label='Our solution', zorder=3)
+    # plt.plot([1, 5], [.697, 2.68], label='Geisler, 1984')
+    # x = np.arange(0, np.exp(6))
+    # y = 1.36 * np.sqrt(x)
+    # plt.plot(np.log10(x), np.log10(y), 'k--', label='$\Delta N = 1.36\sqrt{N}$')
+    plt.legend()
+    plt.xlabel('LOG N')
+    plt.ylabel('$\Delta\Theta$ (arc-seconds)')
+    plt.title('RESOLUTION TASK')
+    return solts
