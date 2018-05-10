@@ -12,6 +12,73 @@ import matplotlib.pyplot as plt
 
 MIN_PER_PIX = .02
 
+# To better estimate and sample photoreceptor absroptions, we need to arbitrarily sample the gaussian-based pointspread functions.
+# To this end, we'll create a class (Our_Gauss) which can be used to estimate the PDF of a gaussian at an arbitrary location.
+# We approximate the normalization with a trapezoidal sum over the 2D Gaussian function within +/- 4.25 arc-minutes, approximated with "norm_sampling" samples
+class Our_Gauss():
+    
+    def _exp_func(self, x, y, mu_x, mu_y, sigma, amplitude):
+        x, y = np.meshgrid(x, y)
+        dist = np.sqrt((x - mu_x)**2 + (y - mu_y)**2)
+        return amplitude * np.exp(-.5 * (dist/sigma)**2) / (2*sigma)
+    
+    def __init__(self, mu, amplitude, sigma, norm_sampling=1001):
+        self.mu_x = mu[0]
+        self.mu_y = mu[1]
+        self.amplitude = amplitude
+        self.sigma = sigma
+        x = np.linspace(-4.25 + mu[0], 4.25 + mu[0], norm_sampling)
+        y = np.linspace(-4.25 + mu[1], 4.25 + mu[1], norm_sampling)
+        example_psf = self._exp_func(x, y, mu[0], mu[1], sigma, amplitude)
+        self.norm_constant = np.trapz(np.trapz(example_psf, x), y)
+    
+    def pdf(self, x, y, norm=True, diag_only=True):
+        value = self._exp_func(x, y, self.mu_x, self.mu_y, self.sigma, self.amplitude)
+        if diag_only:
+            value = np.diagonal(value)
+        if norm:
+            return value / self.norm_constant
+        else:
+            return value
+        
+# Given a 2D Gaussian, we can then create a pointspread function, which is comprised from the sum of two gaussians (see Geisler, 1984)
+# Here, we perform the normalization only after the summation, so that the volume under the entire curve is 1
+class Pointspread_Function(Our_Gauss):
+    
+    def __init__(self, mu, amplitude, sigma, norm_sampling=1001):
+        mu = np.array(mu)
+        self.gauss1 = Our_Gauss(mu, amplitude[0], sigma[0], norm_sampling)
+        self.gauss2 = Our_Gauss(mu, amplitude[1], sigma[1], norm_sampling)
+        x = np.linspace(-4.25 + mu[0], 4.25 + mu[0], norm_sampling)
+        y = np.linspace(-4.25 + mu[1], 4.25 + mu[1], norm_sampling)
+        example_psf = self.gauss1.pdf(x, y, False, False) + self.gauss2.pdf(x, y, False, False)
+        self.norm_constant = np.trapz(np.trapz(example_psf, x), y)
+        
+    def pdf(self, x, y, norm=True):
+        value = self.gauss1.pdf(x, y, False) + self.gauss2.pdf(x, y, False)
+        if norm:
+            return value / self.norm_constant
+        else:
+            return value
+
+# This function creates (x, y) coordinate pairs for where each photoreceptor in our lattice is centered.
+# The construction here is based off of the construct_photoreceptor_lattice below.
+# We accomplish this by tiling two x-y row pairs: 
+#   the first is centered on 0 in X and Y; 
+#   the second is offset in X by receptor_diameter/2, and receptor_height_offset in Y
+# In both cases, each x location is offset by receptor_diameter and each y location by 2*receptor_height_offset
+def get_photoreceptor_locations(x_minutes, y_minutes):
+    """go out x_minutes in each direction
+    """
+    receptor_diameter = .6
+    # this is approximately (.6/2)*tan(pi/3)
+    receptor_height_offset = .52
+    x1 = np.union1d(np.arange(0, x_minutes, receptor_diameter), np.arange(0, -x_minutes, -receptor_diameter))
+    y1 = np.union1d(np.arange(0, y_minutes, 2*receptor_height_offset), np.arange(0, -y_minutes, -2*receptor_height_offset))
+    x2 = np.union1d(np.arange(receptor_diameter/2, x_minutes, receptor_diameter), np.arange(receptor_diameter/2, -x_minutes, -receptor_diameter))
+    y2 = np.union1d(np.arange(receptor_height_offset, y_minutes, 2*receptor_height_offset), np.arange(receptor_height_offset, -y_minutes, -2*receptor_height_offset))
+    return np.vstack([list(itertools.product(x1,y1)), list(itertools.product(x2,y2))]);
+
 
 def get_middle(x, dim=0):
     mid = x.shape[dim] / 2
