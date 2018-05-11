@@ -53,7 +53,7 @@ class Pointspread_Function(Our_Gauss):
     Here, we perform the normalization only after the summation, so that the volume under the
     entire curve is 1
     """
-    def __init__(self, mu, amplitude, sigma, norm_sampling=1001):
+    def __init__(self, mu, amplitude=[.684, .587], sigma=[.443, 2.035], norm_sampling=1001):
         mu = np.array(mu)
         self.gauss1 = Our_Gauss(mu, amplitude[0], sigma[0], norm_sampling)
         self.gauss2 = Our_Gauss(mu, amplitude[1], sigma[1], norm_sampling)
@@ -399,10 +399,10 @@ def intensity_discrimination_task(lum_a, lum_b):
             calc_deltaN(absorbed_a, absorbed_b))
 
 
-def optimize_intensity_discrimination_task(lum_a, d_prime=1.36):
+def optimize_intensity_discrimination_task(lum_a, d_prime_target=1.36):
     bounds = [(lum_a, np.inf)]
     def obj_func(lum_b):
-        return np.square(intensity_discrimination_task(lum_a, lum_b)[0] - d_prime)
+        return np.square(intensity_discrimination_task(lum_a, lum_b)[0] - d_prime_target)
     return optimize.minimize(obj_func, lum_a+.01, bounds=bounds)
 
 
@@ -428,7 +428,11 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     return solts
 
 
-def resolution_task(deltaTheta, lum=4, scale_factor=0, debug=False):
+def mean_photons_absorbed_gauss(psf, photoreceptors, lum, a=.28, d=.2, s=3.1416, t=.68, e555=.5):
+    return a*d*s*t*e555*347.8*lum * psf.pdf(photoreceptors[:, 0], photoreceptors[:, 1])
+
+
+def resolution_task(deltaTheta, lum=4, debug=False):
     """run the resolution task
 
     returns the d-prime, N (average photons absorbed), and actual deltaTheta (in arc-minutes; may
@@ -439,24 +443,21 @@ def resolution_task(deltaTheta, lum=4, scale_factor=0, debug=False):
     debug: boolean. If True, also returns the retinal image for a and b, the receptor lattice, and
     the coordinate matrices x and y.
     """
-    rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(
-        minutes_to_n_receptors(8.5 + deltaTheta), scale_factor)
-    psf = pointspread_function(x, y)
-    ret_im_a = retinal_image(lum, psf)
-    min_per_pix = MIN_PER_PIX / 2**scale_factor
-    deltaThetaPix = int(deltaTheta / min_per_pix)
-    ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix, psf.shape)
-    absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
-    absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
-    to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
-                 deltaThetaPix * min_per_pix]
+    single_psf = Pointspread_Function((0, 0))
+    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0))
+    double_psf_2 = Pointspread_Function((deltaTheta/2., 0))
+    photoreceptors = get_photoreceptor_locations(np.maximum(4.25, deltaTheta),
+                                                 np.maximum(4.25, deltaTheta))
+    absorbed_a = mean_photons_absorbed_gauss(single_psf, photoreceptors, lum)
+    absorbed_b = (mean_photons_absorbed_gauss(double_psf_1, photoreceptors, lum/2.) +
+                  mean_photons_absorbed_gauss(double_psf_2, photoreceptors, lum/2.))
+    to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b)]
     if debug:
-        to_return.extend([ret_im_a, ret_im_b, rec_lattice, x, y])
+        to_return.extend([photoreceptors, absorbed_a, absorbed_b])
     return to_return
 
 
-def optimize_resolution_task(lum, d_prime_target=1.36, init_deltaThetaPix=100, init_step_size=8,
-                             scale_factor=0):
+def optimize_resolution_task(lum, d_prime_target=1.36):
     """optimize resolution task.
 
     this uses a custom loop because we have a discrete, convex function
@@ -465,45 +466,22 @@ def optimize_resolution_task(lum, d_prime_target=1.36, init_deltaThetaPix=100, i
 
     returns deltaTheta in units of arc-minutes
     """
-    min_per_pix = MIN_PER_PIX / 2**scale_factor
-    def res_task(deltaThetaPix):
-        return resolution_task(deltaThetaPix * min_per_pix, lum, scale_factor)
-    current_dprime = res_task(init_deltaThetaPix)[0]
-    loss = current_dprime - d_prime_target
-    current_loss_sign = {True: 1, False: -1}.get(loss > 0)
-    current_deltaThetaPix = init_deltaThetaPix
-    step_size = int(init_step_size)
-    # print(current_deltaThetaPix, loss, res_task(current_deltaThetaPix))
-    while step_size >= 1:
-        while {True: 1, False: -1}.get(loss > 0) == current_loss_sign:
-            current_deltaThetaPix -= step_size * current_loss_sign
-            if current_deltaThetaPix <= 0:
-                current_deltaThetaPix = 1
-            solt = res_task(current_deltaThetaPix)[0]
-            loss = solt - d_prime_target
-            # print(current_deltaThetaPix, loss, res_task(current_deltaThetaPix))
-        current_loss_sign = {True: 1, False: -1}.get(loss > 0)
-        step_size = int(step_size / 2.)
-    deltaThetasPix = [current_deltaThetaPix-1, current_deltaThetaPix, current_deltaThetaPix+1]
-    dprimes = [res_task(i)[0] for i in deltaThetasPix]
-    f = interpolate.interp1d(x=dprimes, y=deltaThetasPix)
-    deltaThetaMin = f(d_prime_target) * min_per_pix
-    print("Interpolated delta theta %s" % deltaThetaMin)
-    return resolution_task(deltaThetaMin, lum, scale_factor)
+    bounds = [(.01, np.inf)]
+    def obj_func(deltaTheta):
+        return np.square(resolution_task(deltaTheta, lum)[0] - d_prime_target)
+    return optimize.minimize(obj_func, 10/(lum/.01), bounds=bounds)
 
 
 def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor=0):
     solts = []
     for l in lum:
-        solts.append(optimize_resolution_task(l, d_prime, init_step_size=8*(2**scale_factor),
-                                              scale_factor=scale_factor))
+        solt = optimize_resolution_task(l, d_prime)
+        print("Found solution for luminance %s: %s" % (l, solt.x))
+        solts.append([solt.x, resolution_task(solt.x, l)])
     solts = np.array(solts)
     # this returns deltaTheta in arc-minutes, we want it in arc-seconds
-    plt.semilogy(np.log10(solts[:, 1]), solts[:, 2] * 60, label='Our solution', zorder=3)
-    # plt.plot([1, 5], [.697, 2.68], label='Geisler, 1984')
-    # x = np.arange(0, np.exp(6))
-    # y = 1.36 * np.sqrt(x)
-    # plt.plot(np.log10(x), np.log10(y), 'k--', label='$\Delta N = 1.36\sqrt{N}$')
+    plt.semilogy(np.log10(solts[:, 2]), solts[:, 0] * 60, label='Our solution', zorder=3)
+    plt.plot([.84025, 5.18603], [58.385, 4.47235], label='Geisler, 1984')
     plt.legend()
     plt.xlabel('LOG N')
     plt.ylabel('$\Delta\Theta$ (arc-seconds)')
