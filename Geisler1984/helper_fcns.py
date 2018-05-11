@@ -469,9 +469,9 @@ def resolution_task(deltaTheta, lum=4, debug=False):
     debug: boolean. If True, also returns the retinal image for a and b, the receptor lattice, and
     the coordinate matrices x and y.
     """
-    single_psf = Pointspread_Function((0, 0))
-    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0))
-    double_psf_2 = Pointspread_Function((deltaTheta/2., 0))
+    single_psf = Pointspread_Function((0, 0), norm_sampling=301)
+    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0), norm_sampling=101)
+    double_psf_2 = Pointspread_Function((deltaTheta/2., 0), norm_sampling=101)
     photoreceptors = get_photoreceptor_locations(np.maximum(4.25, deltaTheta),
                                                  np.maximum(4.25, deltaTheta))
     absorbed_a = mean_photons_absorbed_gauss(single_psf, photoreceptors, lum)
@@ -503,10 +503,10 @@ def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor
     for l in lum:
         solt = optimize_resolution_task(l, d_prime)
         print("Found solution for luminance %s: %s" % (l, solt.x))
-        solts.append([solt.x, resolution_task(solt.x, l)])
+        solts.append([solt.x[0], resolution_task(solt.x, l)[1]])
     solts = np.array(solts)
     # this returns deltaTheta in arc-minutes, we want it in arc-seconds
-    plt.semilogy(np.log10(solts[:, 2]), solts[:, 0] * 60, label='Our solution', zorder=3)
+    plt.semilogy(np.log10(solts[:, 1]), solts[:, 0] * 60, label='Our solution', zorder=3)
     plt.plot([.84025, 5.18603], [58.385, 4.47235], label='Geisler, 1984')
     plt.legend()
     plt.xlabel('LOG N')
