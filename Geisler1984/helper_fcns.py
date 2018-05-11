@@ -12,16 +12,21 @@ import matplotlib.pyplot as plt
 
 MIN_PER_PIX = .02
 
-# To better estimate and sample photoreceptor absroptions, we need to arbitrarily sample the gaussian-based pointspread functions.
-# To this end, we'll create a class (Our_Gauss) which can be used to estimate the PDF of a gaussian at an arbitrary location.
-# We approximate the normalization with a trapezoidal sum over the 2D Gaussian function within +/- 4.25 arc-minutes, approximated with "norm_sampling" samples
+
 class Our_Gauss():
-    
+    """create a 2d Gaussian that we can arbitrarily sample
+
+    To better estimate and sample photoreceptor absroptions, we need to arbitrarily sample the
+    gaussian-based pointspread functions. To this end, we'll create a class (Our_Gauss) which can
+    be used to estimate the PDF of a gaussian at an arbitrary location. We approximate the
+    normalization with a trapezoidal sum over the 2D Gaussian function within +/- 4.25 arc-minutes,
+    approximated with "norm_sampling" samples
+    """
     def _exp_func(self, x, y, mu_x, mu_y, sigma, amplitude):
         x, y = np.meshgrid(x, y)
         dist = np.sqrt((x - mu_x)**2 + (y - mu_y)**2)
         return amplitude * np.exp(-.5 * (dist/sigma)**2) / (2*sigma)
-    
+
     def __init__(self, mu, amplitude, sigma, norm_sampling=1001):
         self.mu_x = mu[0]
         self.mu_y = mu[1]
@@ -31,7 +36,7 @@ class Our_Gauss():
         y = np.linspace(-4.25 + mu[1], 4.25 + mu[1], norm_sampling)
         example_psf = self._exp_func(x, y, mu[0], mu[1], sigma, amplitude)
         self.norm_constant = np.trapz(np.trapz(example_psf, x), y)
-    
+
     def pdf(self, x, y, norm=True, diag_only=True):
         value = self._exp_func(x, y, self.mu_x, self.mu_y, self.sigma, self.amplitude)
         if diag_only:
@@ -40,11 +45,14 @@ class Our_Gauss():
             return value / self.norm_constant
         else:
             return value
-        
-# Given a 2D Gaussian, we can then create a pointspread function, which is comprised from the sum of two gaussians (see Geisler, 1984)
-# Here, we perform the normalization only after the summation, so that the volume under the entire curve is 1
+
+
 class Pointspread_Function(Our_Gauss):
-    
+    """create a pointspread function from the sum of two gaussians (see Geisler, 1984)
+
+    Here, we perform the normalization only after the summation, so that the volume under the
+    entire curve is 1
+    """
     def __init__(self, mu, amplitude, sigma, norm_sampling=1001):
         mu = np.array(mu)
         self.gauss1 = Our_Gauss(mu, amplitude[0], sigma[0], norm_sampling)
@@ -53,7 +61,7 @@ class Pointspread_Function(Our_Gauss):
         y = np.linspace(-4.25 + mu[1], 4.25 + mu[1], norm_sampling)
         example_psf = self.gauss1.pdf(x, y, False, False) + self.gauss2.pdf(x, y, False, False)
         self.norm_constant = np.trapz(np.trapz(example_psf, x), y)
-        
+
     def pdf(self, x, y, norm=True):
         value = self.gauss1.pdf(x, y, False) + self.gauss2.pdf(x, y, False)
         if norm:
@@ -420,10 +428,16 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     return solts
 
 
-def resolution_task(deltaTheta, lum=4, scale_factor=0):
+def resolution_task(deltaTheta, lum=4, scale_factor=0, debug=False):
     """run the resolution task
 
+    returns the d-prime, N (average photons absorbed), and actual deltaTheta (in arc-minutes; may
+    differ from the input because it will be rounded)
+
     deltaTheta: in units of arc-minutes
+
+    debug: boolean. If True, also returns the retinal image for a and b, the receptor lattice, and
+    the coordinate matrices x and y.
     """
     rec_lattice, x_minutes, y_minutes, x, y = construct_photoreceptor_lattice(
         minutes_to_n_receptors(8.5 + deltaTheta), scale_factor)
@@ -434,9 +448,11 @@ def resolution_task(deltaTheta, lum=4, scale_factor=0):
     ret_im_b = retinal_image([lum / 2., lum / 2.], psf, deltaThetaPix, psf.shape)
     absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
     absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
-    # return ret_im_a, ret_im_b, rec_lattice, x, y
-    return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
-            deltaThetaPix * min_per_pix)
+    to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
+                 deltaThetaPix * min_per_pix]
+    if debug:
+        to_return.extend([ret_im_a, ret_im_b, rec_lattice, x, y])
+    return to_return
 
 
 def optimize_resolution_task(lum, d_prime_target=1.36, init_deltaThetaPix=100, init_step_size=8,
