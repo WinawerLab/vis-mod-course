@@ -405,6 +405,36 @@ def optimize_intensity_discrimination_task(lum_a, d_prime_target=1.36):
         return np.square(intensity_discrimination_task(lum_a, lum_b)[0] - d_prime_target)
     return optimize.minimize(obj_func, lum_a+.01, bounds=bounds)
 
+def mean_photons_absorbed_gauss(psf, photoreceptors, lum, a=.28, d=.2, s=3.1416, t=.68, e555=.5):
+    return a*d*s*t*e555*347.8*lum * psf.pdf(photoreceptors[:, 0], photoreceptors[:, 1])
+
+def intensity_discr_task_gauss(lum_a, lum_b, lattice_x=4.25, lattice_y=4.25, psf=None, debug=False):
+    """run the intensity discrimination task with gaussians (rather than discrete photoreceptor lattice to be sampled)
+    lum_a, lum_b are luminances of the two different stimuli
+    lattice_x, lattice_y are in arcminutes
+    debug is a boolean; if true, return more stuff
+    """
+    if psf is None: # otherwise, we've passed in the PSF
+        psf = Pointspread_Function((0, 0)); # same PSF for both stimuli
+    photoreceptors = get_photoreceptor_locations(lattice_x, lattice_y);
+    absorbed_a = mean_photons_absorbed_gauss(psf, photoreceptors, lum_a)
+    absorbed_b = mean_photons_absorbed_gauss(psf, photoreceptors, lum_b)
+    to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b)]
+    if debug:
+        to_return.extend([photoreceptors, absorbed_a, absorbed_b])
+    return to_return
+
+def optimize_intensity_discr_task_gauss(lum_a, d_prime_target=1.36):
+    """Optimize for the luminance of the second stimulus whose discriminability from a stimulus
+    of luminance a is d' equal to d_prime_target.
+
+    This is the gaussian version (i.e. using OurGauss class)
+    """
+    bounds_lum = [(lum_a, np.inf)]; # lum_b > lum_a
+    psf_all = Pointspread_Function((0, 0)); # center at (0, 0)
+    def obj_func(lum_b):
+        return np.square(intensity_discr_task_gauss(lum_a, lum_b, psf=psf_all)[0] - d_prime_target);
+    return optimize.minimize(obj_func, lum_a+0.01, bounds=bounds_lum);
 
 def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     """recreate figure 4
@@ -413,7 +443,8 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     """
     solts = []
     for a in lum_a:
-        solt = optimize_intensity_discrimination_task(a, d_prime)
+        solt = optimize_intensity_discr_task_gauss(a, d_prime)
+        #solt = optimize_intensity_discrimination_task(a, d_prime)
         solts.append(intensity_discrimination_task(a, solt.x))
     plot_solts = np.log10(np.array(solts)[:, 1:])
     plt.plot(plot_solts[:, 0], plot_solts[:, 1], label='Our solution', zorder=3)
@@ -426,11 +457,6 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     plt.ylabel('LOG $\Delta$N')
     plt.title('INTENSITY DISCRIMINATION')
     return solts
-
-
-def mean_photons_absorbed_gauss(psf, photoreceptors, lum, a=.28, d=.2, s=3.1416, t=.68, e555=.5):
-    return a*d*s*t*e555*347.8*lum * psf.pdf(photoreceptors[:, 0], photoreceptors[:, 1])
-
 
 def resolution_task(deltaTheta, lum=4, debug=False):
     """run the resolution task
