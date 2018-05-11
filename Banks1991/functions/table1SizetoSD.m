@@ -1,4 +1,4 @@
-function sd = table1SizetoSD()
+function [sd, sf, eccen, cycleLength] = table1SizetoSD()
 
 % Reported in table 1
 spatialFrequencies  = [.25 .4 .65 1 1.6 2.6 4 6.5 8 10 16 26]; % cycles per degree
