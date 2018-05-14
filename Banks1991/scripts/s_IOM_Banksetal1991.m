@@ -50,249 +50,232 @@
 
 
 % For a given eccentricity:
-%   - Check inter cone spacing (Fig 1) - Check Retinal coverage   (Fig 2) -
-%   Check Proportion absorbed (Fig 2)
+%   - Check inter cone spacing (Fig 1)
+%   - Check Retinal coverage   (Fig 2)
+%   - Check Proportion absorbed (Fig 2)
 
 
-% Get size of stimuli in degrees per 1 SD from table 1
-[sd, sf, eccenStim, cycleLength] = table1SizetoSD;
 
+%% 0. General parameters
 verbose = false;
-%% 0. Specify experiment parameters
-
-nTrials         = 1;        % Number of trials per stimulus condition
-contrastLevels  = [0.01:0.01:0.1, 0.2:0.1:1];        % Contrast levels
-eccentricities  = 10;       % [0 2 5 10 20 40];
-spatFreq        = 0.25;        % [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 8, 10, 16, 26];
-% polarangles     = 0; % Horizontal meridian defocuslevels   = 0; % units??
-% eyemovements    = [0 0 0]';  % No eye movments verbose         = true;
-
-
-% Temporal properties of one trial
-tStep            = 0.01;                % Time step for optical image sequence (seconds)
-tSamples         = (0:tStep:0.20);      % seconds
-% timesd           = .01;               % sd of temporal Gaussian window
-
-% Scene field of view
-sparams.fov       = 2;   % scene field of view in degrees (diameter)
-fov2deg           = 1/sparams.fov;
-sparams.distance  = 0.57;  % meters
-
-% Gabor parameters
-tparams           = harmonicP;           % Function to get standard Gabor
-tparams.ang       = pi/2;                % Gabor orientation (radians) - for now, horizontal
-tparams.freq      = spatFreq*fov2deg;    % Spatial frequency (cycles/FOV)
-tparams.GaborFlag = 1.6/2;               % Gaussian window (1sd?)
-
-% Define gabors as test params, and add another one for the blank stimulus
-tparams(1) = tparams;
-tparams(1).contrast  = 0;                   % Presumably michelson, [0 1]
-tparams(2) = tparams(1);
-
-% Make a Gaussian temporal modulation that brings the stimulus on and off
-tseries = zeros(length(tSamples),1);
-tseries(5:15) = 1; % HACK
-% stimWeights = ieScale(fspecial('gaussian',[1,200],50), 0, 1);
-
-% Set Mosaic import/export options
-saveMosaic = false;                                 % whether to save the mosaic
-loadMosaic = false;                                 % whether to load a previously saved mosaic
-saveMosaicPDF = false;                              % whether to save a PDF of the mosaic
-
-quality.tolerance1 = 0.5;                           % larger than default tolerances to speed-up computation. For production work, either do not set, or set to equal or lower than 0.01
-quality.tolerance2 = 0.05;                          % larger than default tolerances to speed-up computation, For production work, either do not set, or set to equal or lower than 0.001
-quality.marginF = [];                               % How much larger lattice to generate so as to minimize artifacts in cone spacing near the edges. If empty, a dynamic adjustment of margin is done for mosaics < 1.0 degs
-
-
-%% 1. Create optics
-% Add optics (Question: how to add pupil size?)
-wvf = wvfCreate('calc wave', [400:10:700]);
-wvf = wvfSet(wvf,'measured pupil size', 1.5);
-wvf = wvfSet(wvf,'calc pupil size', 1.5);
-wvf = wvfComputePSF(wvf);
-
-% plot PSF
-% wvfPlot(wvf, '1d psf angle', 'deg', 550)
-% wvfPlot(wvf, 'otf', 'deg', 550)
-
-oi = wvf2oi(wvf);
-oi = opticsSet(oi, 'model', 'diffraction limited');
-
-% Plot ocular transmittance function
-% figure; plot(oi.optics.lens.wave, oi.optics.lens.transmittance)
-title('Ocular transmittance function')
-% % Request pupil diameter
-% p = opticsGet(oi.optics,'pupil diameter','mm');
-% 
-% if verbose
-%     % Plot OTF
-%     oiPlot(oi, 'OTF', 'wavelength', 550)
-%     
-%     % Plot Point spread function
-%     oiPlot(oi, 'PSF', 'wavelength', 550)
-%     
-%     % Plot line spread function for multiple wave lengths
-%     oiPlot(oi,'ls wavelength');
-%     title(sprintf('F/# = %.0d',opticsGet(oi.optics,'f number')))
-% end
-
-%% 2. Create OI Sequence
-
-% The two harmonics are 'blended', which means at each moment in time we
-% have a weighted sum of the two where the weights sum to 1.
-[ois(1), scene1] = oisCreate('harmonic','blend',tseries, ...
-    'testParameters',tparams,...
-    'sceneParameters',sparams, ...
-    'oi', oi, ...
-    'meanluminance', 762);
-
-ois(1).visualize('movieilluminance');
-
-ieAddObject(scene1{1});
-ieAddObject(scene1{2});
-% sceneWindow;
-
-%% 3. Create Cone Mosaic
-
-whichEye = 'left';
 deg2m    = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
-polAng   = 0;
+
+whichObserver = 'ideal'; % choose between 'ideal' or 'human'
+
+dPrime = [];
+dPrime2 = [];
+dPrime4 = [];
+Nalone = [];
+%% 1. Specify experiment parameters
+
+% Load experiment parameters
+expParams = loadExpParamsBanks1991;
+
+% What stim params to use
+thisContrast = expParams.contrastLevels(1);
+
+for thisEccen = expParams.eccen(:,1)'
+    % thisEccen    = 10; % Choose from 0, 2, 5, 10, 20, 40
+     
+    for thisSpatFreq = expParams.sf(1,3:5)
+        % thisSpatFreq = 0.25;  % Choose from [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8, 10, 16, 26]
+        
+        % Find the indices of corresponding target size
+        idx = [find(thisEccen == expParams.eccen(:,1)), find(thisSpatFreq == expParams.sf(1,:))];
+        
+        % Get the Gaussian window of the stimulus target
+        thisTargetSize = expParams.sd(idx(1),idx(2));
+        
+        if ~isnan(thisTargetSize)
+            % Load stimulus params
+            [tparams, sparams, tseries] = getStimulusParams(thisContrast, thisTargetSize, thisSpatFreq);
+        
+        
+            %% 2. Create optics
+
+            oi = getOptics(whichObserver, verbose);
+
+            %% 3. Create OI Sequence
+
+            % The two harmonics are 'blended', which means at each moment in time we
+            % have a weighted sum of the two where the weights sum to 1.
+            [ois(1), scene1] = oisCreate('harmonic','blend',tseries, ...
+                'testParameters',tparams{1},...
+                'sceneParameters',sparams, ...
+                'oi', oi, ...
+                'meanluminance', 762);
+
+            if verbose
+                % visualize the OIS
+                ois(1).visualize('movieilluminance');
+
+                % visualize the scene
+                ieAddObject(scene1{1});
+                ieAddObject(scene1{2});
+                sceneWindow;
+            end
+
+            %% 4. Create Cone Mosaic
+
+            % Preallocate cells for absorptions
+            alpha_absorptions = []; %zeros(length(expParams.contrastLevels));
+            beta_absorptions = []; %alpha_absorptions;
 
 
+            % Compute x,y position in m of center of retinal patch from ecc and angle
+            [x, y] = pol2cart(expParams.polarangle, thisEccen);
+            x = x * deg2m;  y = y * deg2m;
+
+            regMosaicParams = struct( ...
+                'eccentricity', thisEccen, ...
+                'polarAngle', expParams.polarangle, ... Right horizontal meridian
+                'cmFOV', sparams.fov);
+
+            cMosaic = coneMosaic('center', [x, y], 'whichEye', expParams.whichEye);
+
+            % Set the field of view (degrees)
+            cMosaic.setSizeToFOV(regMosaicParams.cmFOV);
+
+            % Add photon noise
+            cMosaic.noiseFlag = 'random';
+
+
+            % Not sure why these have to match, but there is a bug if they don't.
+            cMosaic.integrationTime = ois(1).timeStep;
+
+            % There are no eyemovements, but I think you need to have emPaths defined in
+            % order to get time varying absorption rates (because it's an oisSequence)
+            regMosaicParams.em        = emCreate;
+            regMosaicParams.em.emFlag =  [0 0 0]';
+            emPaths  = cMosaic.emGenSequence(ois(1).length, 'nTrials', expParams.nTrials, ...
+                'em', regMosaicParams.em);
+            cMosaic.emPositions = emPaths;
+
+            % implement th inner segment aperture to correct for proportion covered
+            propCovered = getBanks1991ConeCoverage(thisEccen);
+
+            cMosaic.pigment.pdWidth  = cMosaic.pigment.width*propCovered;
+            cMosaic.pigment.pdHeight = cMosaic.pigment.height*propCovered;
+
+
+            for c = expParams.contrastLevels(1)
+
+                % recompute stim for particular contrast
+                tparams{2}(2).contrast = c;
+
+                [ois(2), scene2] = oisCreate('harmonic','blend',tseries, ...
+                    'testParameters',tparams{2},...
+                    'sceneParameters',sparams, ...
+                    'oi', oi, ...
+                    'meanluminance', 762);
+
+                if verbose
+                    % Visualize illuminance
+                    ois(1).visualize('movie illuminance')
+                    ois(2).visualize('movie illuminance')
+
+                    % Now, show the time series of weighting the Gabor and blank stimulus
+                    ois(2).visualize('weights');
+                end
+
+                % Compute absorptions
+                alpha_absorptions(:,:,:,:,c==expParams.contrastLevels,thisSpatFreq==expParams.sf(1,:), thisEccen==expParams.eccen(:,1)') = cMosaic.compute(ois(1), 'currentFlag', false, 'emPaths', emPaths);
+                beta_absorptions(:,:,:,:,c==expParams.contrastLevels,thisSpatFreq==expParams.sf(1,:), thisEccen==expParams.eccen(:,1)') = cMosaic.compute(ois(2), 'currentFlag', false, 'emPaths', emPaths);
+
+            end
+            
+        end
+    end
+end   
+    % Visualize cone mosaic absorptions
+    if verbose; cMosaic.window; end
+    
+    %% 5. Calculate sensitivity (d-prime)
+    
+    % Likelihood
+    dPrimeFunction1 = @(alpha, beta)  (sum( (beta(:)-alpha(:)) .* log(beta(:)./alpha(:))  ) ./ ...
+        sqrt(0.5* sum( (beta(:)+alpha(:)) .* log( (beta(:)./alpha(:))).^2 )) );
+    
+    d_prime1 = zeros(length(expParams.contrastLevels),length(expParams.eccen(:,1)'), length(expParams.sf(1,:)));
+    
+    for ec = expParams.eccen(:,1)'
+        for sf=expParams.sf(1,:)
+            
+            this_alpha = squeeze(mean(alpha_absorptions(1,:,:,:, 1,ec==expParams.eccen(:,1)', sf==expParams.sf(1,:)),4));
+            this_beta = squeeze(mean(beta_absorptions(1,:,:,:,1, ec==expParams.eccen(:,1)', sf==expParams.sf(1,:)),4));
+            
+            d_prime1(c==expParams.contrastLevels, ec==expParams.eccen(:,1)', sf==expParams.sf(1,:)) = dPrimeFunction1(this_alpha,this_beta);
+        end
+    end
+    
+    dPrime = [dPrime, d_prime1];
+    
+
+
+% dPrime = dPrime(1:28);
+% threshold = 1.36*sqrt(2);
 
 
 %%
-alpha_absorptions = cell(length(eccentricities));
-beta_absorptions = alpha_absorptions;
 
-for eccen = eccentricities
-    
-    % Compute x,y position in m of center of retinal patch from ecc and angle
-    [x, y] = pol2cart(polAng, eccen);
-    x = x * deg2m;  y = y * deg2m;
-    
-    regMosaicParams = struct( ...
-        'eccentricity', eccen, ...
-        'polarAngle', polAng, ... Right horizontal meridian
-        'cmFOV', sparams.fov);
-    
-    cMosaic = coneMosaic('center', [x, y], 'whichEye', whichEye);
-    
-    % Set the field of view (degrees)
-    cMosaic.setSizeToFOV(regMosaicParams.cmFOV);
-    
-    % Add photon noise
-    cMosaic.noiseFlag = 'frozen'; % 'random' 'frozen' 'none'
-    
-    % Not sure why these have to match, but there is a bug if they don't.
-    cMosaic.integrationTime = ois(1).timeStep;
-    
-    % There are no eyemovements, but I think you need to have emPaths defined in
-    % order to get time varying absorption rates (because it's an oisSequence)
-    regMosaicParams.em        = emCreate;
-    regMosaicParams.em.emFlag =  [0 0 0]';
-    emPaths  = cMosaic.emGenSequence(length(tSamples), 'nTrials', nTrials, ...
-        'em', regMosaicParams.em);
-    cMosaic.emPositions = emPaths;
-   
-    % implement th inner segment aperture to correct for proportion covered
-    propCovered = getBanks1991ConeCoverage(eccen);
+% figure; set(gcf, 'Color', 'w'); clf; hold on;
+% cmap = jet(9);
+% for ii = 1:9
+%     plot(expParams.contrastLevels*100, dPrime(:,ii), 'Color', cmap(ii,:,:))
+% end%, 'LineWidth',4);
+% % plot(log10(contrastLevels), log10(d_prime1));
+% plot([0.1 100], [threshold, threshold],'k--')
+% plot([0.1 100], [1.36, 1.36],'k--')
+% xlim([0.1 100]); ylim([0.1 100]);
+% xlabel('Contrast (Michelson)')
+% ylabel('Contrast Sensitivity (d prime)'); title('Figure 3')
+% set(gca, 'XScale', 'log', 'YScale', 'log')
+% set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'})
+% set(gca, 'YTick', [0.1, 1, 10, 100], 'YTickLabel', {'0.1', '1', '10', '100'})
 
-    cMosaic.pigment.pdWidth  = cMosaic.pigment.width*propCovered;
-    cMosaic.pigment.pdHeight = cMosaic.pigment.height*propCovered;
 
-    
-    for c = contrastLevels
-        
-        % recompute stim for particular contrast
-        tparams(2).contrast = c;
-        
-        [ois(2), scene2] = oisCreate('harmonic','blend',tseries, ...
-            'testParameters',tparams,...
-            'sceneParameters',sparams, ...
-            'oi', oi, ...
-            'meanluminance', 762);
-     
-        if verbose
-            % Visualize illuminance
-            ois(1).visualize('movie illuminance')
-            ois(2).visualize('movie illuminance')
-            
-            % Now, show the time series of weighting the Gabor and blank stimulus
-            ois(2).visualize('weights');
-        end
-        
-        % Compute absorptions
-        alpha_absorptions{eccen==eccentricities}(:,:,:,:,c==contrastLevels) = cMosaic.compute(ois(1), 'currentFlag', false, 'emPaths', emPaths);
-        beta_absorptions{eccen==eccentricities}(:,:,:,:,c==contrastLevels) = cMosaic.compute(ois(2), 'currentFlag', false, 'emPaths', emPaths);
-        
-    end
+%%
+
+for ii = 1:28, label{ii} = sprintf('%1.3f',expParams.contrastLevels(ii)); end
+
+figure;
+hold all;
+for ii = 1:length(exParams.eccen)
+    plot([0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8],dPrime(end:-1:1,ii));
 end
+set(gca,'XScale','log');
+legend(label);
+xlabel('Spatial frequency (cpd)')
+ylabel('Sensitivity')
 
+title('CSF eccen 10')
+%%
+set(gca, 'XTick', [-1, 0, 1, 2], 'XTickLabel', {'0.1', '1', '10', '100'})
+set(gca, 'YTick', [-1, 0, 1, 2], 'YTickLabel', {'0.1','1', '10','100'})
+box off;
+%%
 
-%% Visualize cone mosaic absorptions
-% ieAddObject(scene2{1})
-% ieAddObject(scene2{2})
-% sceneWindow;
-% cMosaic.window;
-
-
-
-%% Calculate d prime
-
-% Likelihood
-dPrimeFunction1 = @(alpha, beta)  (sum( (beta(:)-alpha(:)) .* log(beta(:)./alpha(:))  ) ./ ...
-                                sqrt(0.5* sum( (beta(:)+alpha(:)) .* log( (beta(:)./alpha(:))).^2 )) ); 
-
-dPrimeFunction2 = @(alpha, beta) ((nanmean(beta(:)-alpha(:)))./sqrt(nanmean(beta(:))));
+% dPrimeFunction2 = @(alpha, beta) ((nanmean(beta(:)-alpha(:)))./sqrt(nanmean(beta(:))));
 
 % Intensity
-dPrimeFunction3 = @(alpha, beta) (1.36*sqrt(nanmean(beta(:))));
+% dPrimeFunction3 = @(alpha, beta) (1.36*sqrt(nanmean(beta(:))));
 
-N = @(alpha, beta) nansum((beta(:)+alpha(:))/2);
-deltaN = @(alpha, beta) nansum(beta(:)-alpha(:));
+% N = @(alpha, beta) nansum((beta(:)+alpha(:))/2);
+% deltaN = @(alpha, beta) nansum(beta(:)-alpha(:));
+%
+% dPrimeFunction4 = @(alpha, beta) deltaN(alpha, beta)/N(alpha, beta);
 
-dPrimeFunction4 = @(alpha, beta) deltaN(alpha, beta)/N(alpha, beta);
 
-d_prime1 = zeros(length(eccentricities), length(contrastLevels));
-% d_prime2 = d_prime1; d_prime3 = d_prime1; d_prime4 = d_prime1;
 
-for eccen = eccentricities
-    for c=contrastLevels
-        
-        this_alpha = squeeze(mean(alpha_absorptions{eccen==eccentricities}(1,:,:,:,c==contrastLevels),4));
-        this_beta = squeeze(mean(beta_absorptions{eccen==eccentricities}(1,:,:,:,c==contrastLevels),4));
-        
-        numerator = nansum( (this_beta(:) - this_alpha(:)) .* log(this_beta(:)./this_alpha(:)) );
-        denumerator = sqrt(0.5* nansum( (this_beta(:) + this_alpha(:)) .* log(this_beta(:)./this_alpha(:)).^2 ));
-        check_d(eccen==eccentricities,c==contrastLevels) = numerator/denumerator;
-        
-        d_prime1(eccen==eccentricities,c==contrastLevels) = dPrimeFunction1(this_alpha,this_beta);
-%         d_prime2(eccen==eccentricities,c==contrastLevels) = dPrimeFunction2(this_alpha,this_beta);
-%         d_prime3(eccen==eccentricities,c==contrastLevels) = dPrimeFunction3(this_alpha,this_beta);
-%         d_prime4(eccen==eccentricities,c==contrastLevels) = dPrimeFunction4(this_alpha,this_beta);
-    end
-end
-
-threshold = 1.36*sqrt(2);
-
-figure(3); clf;
-plot(contrastLevels, d_prime1); 
-% plot(log10(contrastLevels), log10(d_prime1)); 
-hold on; plot([0 1], ([threshold, threshold]),'k--')
-% hold on; plot([-2 1], log10([1.36, 1.36]),'k--')
-xlabel('Contrast (Michelson)')
-ylabel('D prime'); title('Calculation using Log likelihood')
-% 
 % subplot(222); plot(contrastLevels,check_d);
 % hold on; plot([0 1], [threshold, threshold],'k--')
 % xlabel('Contrast (Michelson)')
 % ylabel('D prime'); title('Calculation check')
-% 
+%
 % subplot(223); plot(contrastLevels, d_prime3);
 % xlabel('Contrast (Michelson)')
 % ylabel('D prime'); title('Calculation using 1.36*sqrt(N)')
-% 
+%
 % subplot(224); plot(contrastLevels, d_prime4);
 % xlabel('Contrast (Michelson)')
 % ylabel('D prime'); title('Calculation using delta N / N')
@@ -302,6 +285,18 @@ ylabel('D prime'); title('Calculation using Log likelihood')
 return
 
 %% Hex Mosaic
+
+% Set Hexagonal Mosaic import/export options
+saveMosaic = false;                                 % whether to save the mosaic
+loadMosaic = false;                                 % whether to load a previously saved mosaic
+saveMosaicPDF = false;                              % whether to save a PDF of the mosaic
+
+quality.tolerance1 = 0.5;                           % larger than default tolerances to speed-up computation. For production work, either do not set, or set to equal or lower than 0.01
+quality.tolerance2 = 0.05;                          % larger than default tolerances to speed-up computation, For production work, either do not set, or set to equal or lower than 0.001
+quality.marginF = [];                               % How much larger lattice to generate so as to minimize artifacts in cone spacing near the edges. If empty, a dynamic adjustment of margin is done for mosaics < 1.0 degs
+
+
+
 HexMosaicParams = struct(...
     'name', 'the hex mosaic', ...
     'resamplingFactor', 9, ...                      % Sets underlying pixel spacing; controls the rectangular sampling of the hex mosaic grid

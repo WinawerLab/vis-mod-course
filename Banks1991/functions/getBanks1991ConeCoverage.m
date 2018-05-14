@@ -65,10 +65,10 @@ coverage = f.a*exp(f.b*allEccentricities) + f.c*exp(f.d*allEccentricities);
 coverage(1) = 1; % reset fovea to 1.
 
 % Plot for debugging
-figure(1); clf,
-plot(allEccentricities, coverage, 'o-'); set(gca, 'YScale', 'log', ...
-    'XScale', 'linear', 'XLim', [0 50], 'YLim', [0.01 1]);
-hold all; scatter(banksEccen, banksData, 80','k');
+% figure(1); clf,
+% plot(allEccentricities, coverage, 'o-'); set(gca, 'YScale', 'log', ...
+%     'XScale', 'linear', 'XLim', [0 50], 'YLim', [0.01 1]);
+% hold all; scatter(banksEccen, banksData, 80','k');
 
 idx = (eccDeg == allEccentricities);
 if any(idx)
