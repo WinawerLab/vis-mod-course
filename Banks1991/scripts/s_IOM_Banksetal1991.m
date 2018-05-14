@@ -56,10 +56,10 @@
 
 
 %% 0. General parameters
-verbose = true;
+verbose = false;
 deg2m    = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
 
-whichObserver = 'human'; % choose between 'ideal' or 'human'
+whichObserver = 'ideal'; % choose between 'ideal' or 'human'
 
 %% 1. Specify experiment parameters
 
@@ -72,7 +72,7 @@ thisContrast = expParams.contrastLevels(1);
 for thisEccen = 10;%expParams.eccen(:,1)'
     % thisEccen    = 10; % Choose from 0, 2, 5, 10, 20, 40
      
-    for thisSpatFreq = 1;%[0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8]; %expParams.sf(1,:)
+    for thisSpatFreq = [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8]; %expParams.sf(1,:)
         % thisSpatFreq = 0.25;  % Choose from [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8, 10, 16, 26]
         
         % Find the indices of corresponding target size
@@ -106,7 +106,7 @@ for thisEccen = 10;%expParams.eccen(:,1)'
 %             betaAbsorptions = []; %alpha_absorptions;
 
 
-            [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois);
+            [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver);
 
             for c = expParams.contrastLevels
 
@@ -170,42 +170,42 @@ if verbose; cMosaic.window; end
 
 
 %% debug ideal observer
-% dPrime = dPrime(1:28);
-% threshold = 1.36*sqrt(2);
+threshold = 1.36/sqrt(2);
 
-% figure; set(gcf, 'Color', 'w'); clf; hold on;
-% cmap = jet(9);
-% for ii = 1:9
-%     plot(expParams.contrastLevels*100, dPrime(:,ii), 'Color', cmap(ii,:,:))
-% end%, 'LineWidth',4);
-% % plot(log10(contrastLevels), log10(d_prime1));
-% plot([0.1 100], [threshold, threshold],'k--')
-% plot([0.1 100], [1.36, 1.36],'k--')
-% xlim([0.1 100]); ylim([0.1 100]);
-% xlabel('Contrast (Michelson)')
-% ylabel('Contrast Sensitivity (d prime)'); title('Figure 3')
-% set(gca, 'XScale', 'log', 'YScale', 'log')
-% set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'})
-% set(gca, 'YTick', [0.1, 1, 10, 100], 'YTickLabel', {'0.1', '1', '10', '100'})
+for ii = 1:9, label{ii} = sprintf('%1.3f',expParams.sf(1,ii)); end
+
+
+figure; set(gcf, 'Color', 'w'); clf; hold on;
+cmap = jet(9);
+for ii = 1:9
+    plot(expParams.contrastLevels*100, thisdPrime(:,ii), 'Color', cmap(ii,:,:))    
+end
+
+plot([0.1 100], [threshold, threshold],'k--')
+% plot([0.1 100], [1.36, 1.36],'r--')
+xlim([0.1 100]); ylim([0.1 100]);
+xlabel('Contrast (Michelson)')
+ylabel('Contrast Sensitivity (d prime)'); title('Figure 3')
+set(gca, 'XScale', 'log', 'YScale', 'log')
+set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'})
+set(gca, 'YTick', [0.1, 1, 10, 100], 'YTickLabel', {'0.1', '1', '10', '100'})
+legend(label);
 
 
 %% Plot Sensitivity for every stimulus contrast level 
-% Question: what threshold to pick???
-
-% create labels
-for ii = 1:28, label{ii} = sprintf('%1.3f',expParams.contrastLevels(ii)); end
+[val_tresh, idx_thresh] = min(abs(thisdPrime-threshold));
+sensitivity = 1./(expParams.contrastLevels(idx_thresh));
 
 figure;
-hold all;
-thisdPrime = thisdPrime';
-for c = 1:length(expParams.contrastLevels)
-    plot([0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8],thisdPrime(:,c));
-end
+plot([0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8],sensitivity);
 
-set(gca,'XScale','log');
+set(gca,'XScale','log'); xlim([.1 100]); ylim([1 1000]);
 legend(label);
 xlabel('Spatial frequency (cpd)')
-ylabel('Sensitivity')
+ylabel('Contrast Sensitivity')
+set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'})
+set(gca, 'YTick', [1, 10, 100, 1000], 'YTickLabel', {'1', '10', '100', '1000'})
+
 
 title('CSF eccen 10')
 box off;

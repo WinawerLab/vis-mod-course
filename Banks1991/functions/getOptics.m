@@ -15,7 +15,7 @@ switch whichObserver
         oi = opticsSet(oi, 'model', 'diffraction limited');
         
     case 'human'
-        oi = oiDefocus(0);
+        oi = oiCreate('human');
         
 end
 

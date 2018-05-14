@@ -1,4 +1,4 @@
-function [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois)
+function [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver)
 
   % Compute x,y position in m of center of retinal patch from ecc and angle
     [x, y] = pol2cart(expParams.polarangle, thisEccen);
@@ -15,8 +15,10 @@ function [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams
     cMosaic.setSizeToFOV(regMosaicParams.cmFOV);
 
     % Add photon noise
-    cMosaic.noiseFlag = 'random';
-
+%     if whichObserver == 'human'
+%         cMosaic.noiseFlag = 'random';
+%     else
+    cMosaic.noiseFlag = 'none';
 
     % Not sure why these have to match, but there is a bug if they don't.
     cMosaic.integrationTime = ois(1).timeStep;
