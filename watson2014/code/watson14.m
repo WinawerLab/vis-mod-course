@@ -69,9 +69,9 @@ x0_init = [0.9851,1.058,22.14;...
            0.9960,0.9932,12.13];
 for ii = 1:length(x_nameIdx)
     if ii ==1 
-        dispZoneIdx =15; %17
+        dispZoneIdx =2; %17
     else
-        dispZoneIdx =15; %19
+        dispZoneIdx =2; %19
     end
     y = eval(y_nameIdx{ii}); y = y(dispZoneIdx:end)'; 
     ecc = eval(x_nameIdx{ii}); ecc = ecc(dispZoneIdx:end)';
@@ -80,8 +80,9 @@ for ii = 1:length(x_nameIdx)
     %2-ecc at which density is reduced by factor of four
     %3-scale factor of exponential
     %bounds where chosen to be in proximity to actual values used in the paper (table 1)
-    ub = [1, 2, 25];  %upper bound
-    lb = [-1, 1, 7];  %lower bound
+    %ub = [1, 2, 25];  %upper bound
+    %lb = [-1, 1, 7];  %lower bound
+    ub = x0_init(ii,:); lb = x0_init(ii,:);
     x0 = x0_init(ii,:); %starting values - chosen as best fits from paper (table 1)
     f = @(x)fit_displacementZone(x,y,ecc);
     [x,fval,exitflag,output,grad,hessian] = fmincon(f,x0,[],[],[],[],lb,ub,[],opt);
