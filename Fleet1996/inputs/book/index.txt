@@ -1,0 +1,35 @@
+Ground truth stereo videos
+==========================
+
+This groud truth stereo video was created for evaluation purposes for the paper
+
+  Real-time Spatiotemporal Stereo Matching Using the Dual-Cross-Bilateral Grid
+  Christian Richardt, Douglas Orr, Ian Davies, Antonio Criminisi and Neil A. Dodgson
+  European Conference on Computer Vision (ECCV) 2010
+
+  Project website: <http://www.cl.cam.ac.uk/research/rainbow/projects/dcbgrid/>
+
+If you use our datasets, please cite our paper. Thanks.
+
+
+Dataset 'book'
+--------------
+length      : 41 frames (0001 to 0041)
+resolution  : 400 x 300
+disparities : 0 to 63.75 in steps of 0.25
+
+To obtain disparity (in pixels) from pixel values, devide the pixel value by 4.
+This maps pixel values 0 to 255 linearly to disparities 0 to 63.75, in steps of 0.25.
+
+The book object was taken from the Official Blender Model Repository at
+<http://e2-productions.com/repository/>.
+
+
+Naming scheme
+-------------
+The naming scheme for images in sub-directories is as follows:
+
+  L0001.png  - Left input frame.
+  R0001.png  - Right input frame.
+  TL0001.png - Left ground truth disparity map.
+  TR0001.png - Right ground truth disparity map.
