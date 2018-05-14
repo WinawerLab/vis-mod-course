@@ -32,8 +32,22 @@ class Our_Gauss():
         self.mu_y = mu[1]
         self.amplitude = amplitude
         self.sigma = sigma
-        x = np.linspace(-4.25 + mu[0], 4.25 + mu[0], norm_sampling)
-        y = np.linspace(-4.25 + mu[1], 4.25 + mu[1], norm_sampling)
+        # the first x/y coordinate should be less than 0; second should be > 0; if not, correct
+        dist_x = [-4.25 + mu[0], 4.25 + mu[0]];
+        dist_y = [-4.25 + mu[1], 4.25 + mu[1]];
+
+        if dist_x[0] > 0:
+          dist_x[0] = -2; # go two degrees to the left of 0
+        if dist_x[1] < 0:
+          dist_x[1] = 2; # same
+        if dist_y[0] > 0:
+          dist_y[0] = -2; # go two degrees to the left of 0
+        if dist_y[1] < 0:
+          dist_y[1] = 2; # same
+
+        # now evaluate 
+        x = np.linspace(dist_x[0], dist_x[1], norm_sampling)
+        y = np.linspace(dist_y[0], dist_y[1], norm_sampling)
         example_psf = self._exp_func(x, y, mu[0], mu[1], sigma, amplitude)
         self.norm_constant = np.trapz(np.trapz(example_psf, x), y)
 
@@ -57,8 +71,22 @@ class Pointspread_Function(Our_Gauss):
         mu = np.array(mu)
         self.gauss1 = Our_Gauss(mu, amplitude[0], sigma[0], norm_sampling)
         self.gauss2 = Our_Gauss(mu, amplitude[1], sigma[1], norm_sampling)
-        x = np.linspace(-4.25 + mu[0], 4.25 + mu[0], norm_sampling)
-        y = np.linspace(-4.25 + mu[1], 4.25 + mu[1], norm_sampling)
+        # the first x/y coordinate should be less than 0; second should be > 0; if not, correct
+        dist_x = [-4.25 + mu[0], 4.25 + mu[0]];
+        dist_y = [-4.25 + mu[1], 4.25 + mu[1]];
+
+        if dist_x[0] > 0:
+          dist_x[0] = -2; # go two degrees to the left of 0
+        if dist_x[1] < 0:
+          dist_x[1] = 2; # same
+        if dist_y[0] > 0:
+          dist_y[0] = -2; # go two degrees to the left of 0
+        if dist_y[1] < 0:
+          dist_y[1] = 2; # same
+
+        # now evaluate
+        x = np.linspace(dist_x[0], dist_x[1], norm_sampling)
+        y = np.linspace(dist_y[0], dist_y[1], norm_sampling)
         example_psf = self.gauss1.pdf(x, y, False, False) + self.gauss2.pdf(x, y, False, False)
         self.norm_constant = np.trapz(np.trapz(example_psf, x), y)
 
@@ -458,20 +486,21 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     plt.title('INTENSITY DISCRIMINATION')
     return solts
 
-def resolution_task(deltaTheta, lum=4, debug=False):
+def resolution_task(deltaTheta, lum=4, norm_samp=101, debug=False):
     """run the resolution task
 
-    returns the d-prime, N (average photons absorbed), and actual deltaTheta (in arc-minutes; may
-    differ from the input because it will be rounded)
+    returns the d-prime, and N (average photons absorbed)
+
+    if debug=True, also returns photoreceptor locs, absorbed_a, absorbed_b
 
     deltaTheta: in units of arc-minutes
 
     debug: boolean. If True, also returns the retinal image for a and b, the receptor lattice, and
     the coordinate matrices x and y.
     """
-    single_psf = Pointspread_Function((0, 0), norm_sampling=301)
-    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0), norm_sampling=101)
-    double_psf_2 = Pointspread_Function((deltaTheta/2., 0), norm_sampling=101)
+    single_psf = Pointspread_Function((0, 0), norm_sampling=norm_samp)
+    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0), norm_sampling=norm_samp)
+    double_psf_2 = Pointspread_Function((deltaTheta/2., 0), norm_sampling=norm_samp)
     photoreceptors = get_photoreceptor_locations(np.maximum(4.25, deltaTheta),
                                                  np.maximum(4.25, deltaTheta))
     absorbed_a = mean_photons_absorbed_gauss(single_psf, photoreceptors, lum)
@@ -483,7 +512,7 @@ def resolution_task(deltaTheta, lum=4, debug=False):
     return to_return
 
 
-def optimize_resolution_task(lum, d_prime_target=1.36):
+def optimize_resolution_task(lum, d_prime_target=1.36, norm_sampling=101):
     """optimize resolution task.
 
     this uses a custom loop because we have a discrete, convex function
@@ -494,16 +523,16 @@ def optimize_resolution_task(lum, d_prime_target=1.36):
     """
     bounds = [(.01, np.inf)]
     def obj_func(deltaTheta):
-        return np.square(resolution_task(deltaTheta, lum)[0] - d_prime_target)
+        return np.square(resolution_task(deltaTheta, lum, norm_sampling)[0] - d_prime_target)
     return optimize.minimize(obj_func, 10/(lum/.01), bounds=bounds)
 
 
-def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor=0):
+def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, norm_sampling=101):
     solts = []
     for l in lum:
-        solt = optimize_resolution_task(l, d_prime)
+        solt = optimize_resolution_task(l, d_prime, norm_sampling)
         print("Found solution for luminance %s: %s" % (l, solt.x))
-        solts.append([solt.x[0], resolution_task(solt.x, l)[1]])
+        solts.append([solt.x[0], resolution_task(solt.x, l, norm_sampling)[1]])
     solts = np.array(solts)
     # this returns deltaTheta in arc-minutes, we want it in arc-seconds
     plt.semilogy(np.log10(solts[:, 1]), solts[:, 0] * 60, label='Our solution', zorder=3)
