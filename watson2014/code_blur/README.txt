@@ -1,0 +1,3 @@
+smooth a grating given photoreceptor & ganglion cell densities
+
+work in progress...

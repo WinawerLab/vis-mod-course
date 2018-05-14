@@ -1,0 +1,3 @@
+figures before and after blur
+first trying out a symmetrical blur (e.g. only using the temporal filter)
+Next is to somehow use filters for all 4 locations...
