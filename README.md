@@ -10,3 +10,7 @@ Photo receptor level:
 (1) Geisler (1984) Physical limits of acuity and hyperacuity. J. Opt. Soc. Am. A
 
 (2) Banks, Sekuler & Anderson (1991) Pheripheral spatial vision: limits imposed by optics, photoreecptors, and receptor pooling. J. Opt. Soc. Am. A
+
+V1:
+
+(3) Fleet, Wagner, & Heeger (1996). Neural encoding of binocular disparity: Energy models, position shifts and phase shifts Vision Research.
