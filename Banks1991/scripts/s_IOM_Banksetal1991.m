@@ -56,7 +56,7 @@
 
 
 %% 0. General parameters
-verbose = false;
+verbose = true;
 deg2m    = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
 
 whichObserver = 'human'; % choose between 'ideal' or 'human'
@@ -72,7 +72,7 @@ thisContrast = expParams.contrastLevels(1);
 for thisEccen = 10;%expParams.eccen(:,1)'
     % thisEccen    = 10; % Choose from 0, 2, 5, 10, 20, 40
      
-    for thisSpatFreq = [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8]; %expParams.sf(1,:)
+    for thisSpatFreq = 1;%[0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8]; %expParams.sf(1,:)
         % thisSpatFreq = 0.25;  % Choose from [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8, 10, 16, 26]
         
         % Find the indices of corresponding target size
@@ -99,16 +99,6 @@ for thisEccen = 10;%expParams.eccen(:,1)'
                 'oi', oi, ...
                 'meanluminance', 762);
 
-            if verbose
-                % visualize the OIS
-                ois(1).visualize('movieilluminance');
-
-                % visualize the scene
-                ieAddObject(scene1{1});
-                ieAddObject(scene1{2});
-                sceneWindow;
-            end
-
             %% 4. Create Cone Mosaic
 
             % Preallocate cells for absorptions
@@ -130,16 +120,21 @@ for thisEccen = 10;%expParams.eccen(:,1)'
                     'meanluminance', 762);
 
                 if verbose
-                    % Visualize illuminance
-                    ois(1).visualize('movie illuminance')
-                    ois(2).visualize('movie illuminance')
+           
+                    % visualize the OIS
+                    ois(2).visualize('movieilluminance');
+
+                    % visualize the scene
+                    ieAddObject(scene2{1});
+                    ieAddObject(scene2{2});
+                    sceneWindow;
 
                     % Now, show the time series of weighting the Gabor and blank stimulus
-                    ois(2).visualize('weights');
+%                     ois(2).visualize('weights');
                 end
 
-                % Compute absorptions (contrast x SF x trials x cols x rows x time points x
-                % 
+                % Compute absorptions 6D
+                % (contrast x SF x trials x cols x rows x time points)
                 alphaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(1), 'currentFlag', false, 'emPaths', emPaths);
                 betaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(2), 'currentFlag', false, 'emPaths', emPaths);
 
@@ -149,34 +144,34 @@ for thisEccen = 10;%expParams.eccen(:,1)'
     end
 end
 
-        % Visualize cone mosaic absorptions
-        if verbose; cMosaic.window; end
+% Visualize cone mosaic absorptions
+if verbose; cMosaic.window; end
 
-            %% 5. Calculate sensitivity (d-prime)
+    %% 5. Calculate sensitivity (d-prime)
 
-            % Likelihood
-            dPrime = dPrimeFunction;
+    % Likelihood
+    dPrime = dPrimeFunction;
+
+    thisdPrime = [];
+    for c = 1:length(expParams.contrastLevels)
+        for sf=1:9
+
+            this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
+            this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
+
+            thisdPrime(c, sf) = dPrime(this_alpha,this_beta);
+
+        end
+    end
+
             
-            thisdPrime = [];
-            for c = 1:length(expParams.contrastLevels)
-                for sf=1:9
-
-                    this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
-                    this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
-
-                    thisdPrime(c, sf) = dPrime(this_alpha,this_beta);
-                    
-                end
-            end
-
-            
 
 
+
+
+%% debug ideal observer
 % dPrime = dPrime(1:28);
 % threshold = 1.36*sqrt(2);
-
-
-%%
 
 % figure; set(gcf, 'Color', 'w'); clf; hold on;
 % cmap = jet(9);
