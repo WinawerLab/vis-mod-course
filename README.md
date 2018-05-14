@@ -11,6 +11,8 @@ Photo receptor level:
 
 (2) Banks, Sekuler & Anderson (1991) Pheripheral spatial vision: limits imposed by optics, photoreecptors, and receptor pooling. J. Opt. Soc. Am. A
 
+(3) Watson, A. B. (2014). A formula for human retinal ganglion cell receptive field density as a function of visual field location. Journal of Vision, 14(7), 15-15.
+
 V1:
 
-(3) Fleet, Wagner, & Heeger (1996). Neural encoding of binocular disparity: Energy models, position shifts and phase shifts Vision Research.
+(4) Fleet, Wagner, & Heeger (1996). Neural encoding of binocular disparity: Energy models, position shifts and phase shifts Vision Research.
