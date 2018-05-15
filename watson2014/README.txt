@@ -11,6 +11,4 @@ Done so far:
 - used data from paper to blur an image given the different cone densities across all retinal locations
 - create filters of retinal ganglion cells receptive field densities (using math in watson paper) and apply to blurred cone image.
 ---------
-I think I'm done!
----------
 The code_blur folder has the imput/ouput images as well 
