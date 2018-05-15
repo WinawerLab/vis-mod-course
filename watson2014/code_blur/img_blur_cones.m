@@ -1,8 +1,8 @@
-function [blurImg_hf, blurImg_lf] = img_blur_cones()
+function [high_freq, low_freq,blurImg_hf, blurImg_lf] = img_blur_cones()
 %% blur an image given what we know about photoreceptor density
 % account for differences in density that exist in different retinal locations
 %% create gratings & mark diff retinal locations in red
-clear all; clc; close all;
+%clear all; clc; close all;
 % top quadrant - superior
 % bottom - inferior
 % left - nasal
@@ -54,7 +54,7 @@ temporal_ret = temporal_filt.*mask;
 figure;
 subplot(2,2,1);imshow(superior_ret); colormap('gray'); axis square; title('superior');
 subplot(2,2,2);imshow(inferior_ret); colormap('gray'); axis square; title('inferior');
-subplot(2,2,3);imshow(nasal_ret); colormap('gray'); axis square; title('nasal');
+subplot(2,2,3);imshow(nasal_ret); axis square; title('nasal');
 subplot(2,2,4);imshow(temporal_ret); colormap('gray'); axis square; title('temporal');
 %put filters together
 figure;
@@ -87,5 +87,6 @@ set(gca,'xticklabel',[-12,-6, 0, 6, 12]); xlabel('deg');
 % set(gca,'yticklabel',[]);  set(gca,'xtick',[1 120 240 360 480 600 720 840 959]);
 % set(gca,'xticklabel',[-24,-18, -12, -8, 0, 8, 12, 18, 24]); xlabel('deg');
 title('low sf after blur');
-
+%so that I can it in other functions
+close all;
 
