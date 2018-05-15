@@ -1,3 +1,4 @@
+function [ogecc, fittedVals] = watson14()
 clear all; clc; close all;
 %load data
 dataLoad_all;
@@ -80,8 +81,8 @@ for ii = 1:length(x_nameIdx)
     %2-ecc at which density is reduced by factor of four
     %3-scale factor of exponential
     %bounds where chosen to be in proximity to actual values used in the paper (table 1)
-    %ub = [1, 2, 25];  %upper bound
-    %lb = [-1, 1, 7];  %lower bound
+	%ub = [1, 2, 25];  %upper bound
+	%lb = [-1, 1, 7];  %lower bound
     ub = x0_init(ii,:); lb = x0_init(ii,:);
     x0 = x0_init(ii,:); %starting values - chosen as best fits from paper (table 1)
     f = @(x)fit_displacementZone(x,y,ecc);
