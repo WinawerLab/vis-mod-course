@@ -9,8 +9,7 @@ and/or retinal ganglion cells across temporal/nasal/superior/inferior retina
 Done so far:
 - replicated first 5 figures in watson paper
 - used data from paper to blur an image given the different cone densities across all retinal locations
-- create filters of retinal ganglion cells receptive field densities (using math in watson paper) and apply 
-  to blurred cone image.
+- create filters of retinal ganglion cells receptive field densities (using math in watson paper) and apply to blurred cone image.
 ---------
 I think I'm done!
 ---------
