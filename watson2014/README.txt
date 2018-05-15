@@ -9,5 +9,7 @@ and/or retinal ganglion cells across temporal/nasal/superior/inferior retina
 Done so far:
 - replicated first 5 figures in watson paper
 - used data from paper to blur an image given the different cone densities across all retinal locations
-To do:
 - same thing but for retinal ganglion cell densities
+  -add rgcd blur on top of cone blur
+---------
+I think I'm done!
