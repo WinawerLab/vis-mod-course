@@ -13,3 +13,5 @@ Done so far:
   -add rgcd blur on top of cone blur
 ---------
 I think I'm done!
+---------
+The code_blur folder has the imput/ouput images as well 
