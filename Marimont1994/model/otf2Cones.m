@@ -1,13 +1,16 @@
 % usage:    otf = otf2Cones(params,dispFig)
 % by:       Michael Jigo
 % purpose:  Generate cone pigment sensitivitiies from the optics.
+%
+% input:
+% p         contains the parameter structure containing the OTF (see inputParams for more info).
 
 function p = otf2Cones(p,dispFig)
 if ~exist('dispFig','var')
    dispFig = 0;
 end
 
-%% Compute cone sensitivities
+%% Weight OTF by cone spectral sensitivity
 load cones
 long = repmat(cones(1,:)',1,size(p.otf,2));
 med = repmat(cones(2,:)',1,size(p.otf,2));

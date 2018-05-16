@@ -2,6 +2,9 @@
 % by:       Michael Jigo
 % purpose:  Add wavelength-independent aberrations to Optical Transfer Function
 %           inputted in "p" structure carried over from "otf.m".
+%
+% input:
+% p         contains the parameter structure containing the OTF (see inputParams for more info).
 
 function p = otf_indAberr(p,dispFig)
 if ~exist('dispFig','var')

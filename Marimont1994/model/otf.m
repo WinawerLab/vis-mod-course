@@ -1,6 +1,6 @@
 % usage:    otf = otf(params,dispFig)
 % by:       Michael Jigo
-% purpose:  Create the Optical Transfer function (OTF) given the input 
+% purpose:  Create and plot the Optical Transfer function (OTF) given the input 
 %           parameters (p).
 
 function p = otf(p,dispFig)

@@ -1,20 +1,19 @@
-% usage:    colorMatch_withAberration(p,disp1,disp2,dispFig)
+% usage:    runColorMatch(p,disp1,disp2,dispFig)
 % by:       Michael Jigo
 % purpose:  Compute the matched color images between 2 displays (disp1 & disp 2)
 %
 % INPUTS:
-% p         parameters for the model (default = [])
+% p         parameters for the model (see inputParams.m for more help; default = [])
 % disp1     3xn matrix of spectral power distribution for the primaries in dispaly 1
-% disp2     primary matrix for display 2
+% disp2     3xn primary matrix for display 2
 % dispFig   logical input (0 or 1) to display figures
 
-function colorMatch_withAberration(p,disp1,disp2,dispFig)
+function runColorMatch(p,disp1,disp2,dispFig)
 if ~exist('dispFig','var')
     dispFig = 1;
 end
+
 %% Validate parameters
-p.im = zeros(1,40);
-p.im(20) = 1;
 if ~exist('p','var') || isempty(p)
     p = inputParams;
 else

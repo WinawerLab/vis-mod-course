@@ -1,6 +1,27 @@
 % usage:    inputParams
 % by:       Michael Jigo
 % purpose:  Validate any inputted parameters and insert default parameters where empty
+%
+% input:
+% in        Structure with the following fields:
+%           dx          number of samples per degree (default: 40) 
+%                       NOTE: currently assumes stimulus spans 1 degree
+%           
+%           dLambda     number of wavelength samples between 400 and 700 nm (default: 31)
+%                       NOTE: this variable depends on how finely cone photopigments were sampled in wavelength space
+%          
+%           q           1x3 element vector containing the variables (q1,q2,q3) for converting defocus to optical path length error (default: [1.7312 0.63346 0.2131]);
+%          
+%           defocus     dioptric power of the unaccommodated eye (default: 59.9404)
+%           
+%           pupilRadius radius of the pupil in meters (default: 0.0015)
+%
+%           degPerM     multiplicative inverse of meters per degree (default: 3434.04)
+%
+%           im          input 1-dimensional image. currently, the inputted image will be repeated in each color channel (default: step function)
+%
+%           If no any parameters are missing, the defaults will be used.
+%           If any invalid parameters are entered, they will be removed.
 
 function params = inputParams(in)
 

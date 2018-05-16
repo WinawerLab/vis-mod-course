@@ -1,13 +1,16 @@
 % usage:    otf = otf2Linespread(params,dispFig)
 % by:       Michael Jigo
 % purpose:  Generate linespread function from Optical Transfer Function.
+%
+% input:
+% p         contains the parameter structure containing the OTF (see inputParams for more info).
 
 function p = otf2Linespread(p,dispFig)
 if ~exist('dispFig','var')
    dispFig = 0;
 end
 
-%% Compute linespread
+%% Compute linespread by transfroming from frequency -> spatial domain
 for i = 1:size(p.otf,1)
    otf = p.otf(i,:);
    otf(isnan(otf)) = [];
