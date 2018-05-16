@@ -13,6 +13,8 @@ Photo receptor level:
 
 (3) Watson, A. B. (2014). A formula for human retinal ganglion cell receptive field density as a function of visual field location. Journal of Vision, 14(7), 15-15.
 
+(4) Marimont & Wandell (1994). Matching color images: the effects of axial chromatic aberration. JOSA A, 11(12), 3113-3122.
+
 V1:
 
-(4) Fleet, Wagner, & Heeger (1996). Neural encoding of binocular disparity: Energy models, position shifts and phase shifts Vision Research.
+(5) Fleet, Wagner, & Heeger (1996). Neural encoding of binocular disparity: Energy models, position shifts and phase shifts Vision Research.
