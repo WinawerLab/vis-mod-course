@@ -4,5 +4,4 @@ Matching color images: the effects of axial chromatic aberration
 by: David H. Marimont & Brian A. Wandell
 as implemented by: Michael Jigo
 
-To perform the color matching, run "runColorMatch"
-For information about the relevant parameters, type "help inputParams"
+Please run TUTORIAL for a general overview of how the model has been implemented.

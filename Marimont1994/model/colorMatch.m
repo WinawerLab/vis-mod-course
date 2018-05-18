@@ -10,7 +10,12 @@ end
 
 %% Get Fourier image
 sfs = p.freq(1:floor(length(p.freq)/2));
-freqIm = fft(p.im,p.dx)*(1/p.dx);
+if size(p.im,1)==1
+   p.im = repmat(p.im,3,1);
+end
+for i = 1:size(p.im,1)
+   freqIm(i,:) = fft(p.im(i,:),p.dx)*(1/p.dx);
+end
 
 %% Compute calibration matrix
 C1 = nan(length(sfs),size(p.cones,1),size(disp1,1));
@@ -29,8 +34,8 @@ end
 %% Photopigment resposnes (Display 1)
 pigFreq = nan(size(p.cones,1),length(sfs));
 for s = 1:length(sfs)
-   % stimulus pattern is (assumed to be) equal in each color channel
-   tempIm = repmat(freqIm(s),size(p.cones,1),1);
+   % extract amplitude at frequency s
+   tempIm = freqIm(:,s);
 
    % photopigment response (frequency domain)
    pigFreq(:,s) = squeeze(C1(s,:,:))*tempIm;
@@ -49,10 +54,26 @@ for c = 1:size(p.cones,1)
    pigSpace2(c,:) = real(ifft(pigFreq2(c,:),p.dx));
 end
 
-%% Display matching chromatic spatial patterns
 if dispFig
-   figure('Name','Color matching');
    col = 'rgb';
+   %% Display phosphors
+   %figure('Name','Display primaries');
+   %disps = {disp1 disp2};
+   %for d = 1:length(disps)
+   %   subplot(1,2,d);
+   %   for j = 1:size(disps{d},1)
+   %      plot(p.lambda*10^9,disps{d}(j,:),[col(j),'-']); hold on
+   %   end
+   %   title(sprintf('Display %i',d));
+   %   set(gca,'TickDir','out');
+   %   xlabel('Wavelength (nm)');
+   %   ylabel('Power');
+   %   box off
+   %end
+   %legend({'Primary 1' 'Primary 2' 'Primary 3'});
+
+   %% Display matching chromatic spatial patterns
+   figure('Name','Color matching');
    plotTitles = {'Display 1' 'Photopigment' 'Display 2'};
    % only plotting middle 80% of curves to avoid assumed circular edges
    idx = ceil(p.dx*0.1):floor(p.dx*0.9);
@@ -60,7 +81,7 @@ if dispFig
 
    for c = 1:size(p.cones,1)
       subplot(3,3,(c-1)*3+1);
-      plot(x,p.im(idx),[col(c),'-']);
+      plot(x,p.im(c,idx),[col(c),'-']);
       set(gca,'TickDir','out');
       if c==1, title('Display 1'), end
       if c==3, xlabel('Position (deg)'), end
@@ -87,19 +108,4 @@ if dispFig
       box off
    end
 
-%% Display phosphors
-   figure('Name','Display primaries');
-   disps = {disp1 disp2};
-   for d = 1:length(disps)
-      subplot(1,2,d);
-      for j = 1:size(disps{d},1)
-         plot(p.lambda*10^9,disps{d}(j,:),[col(j),'-']); hold on
-      end
-      title(sprintf('Display %i',d));
-      set(gca,'TickDir','out');
-      xlabel('Wavelength (nm)');
-      ylabel('Power');
-      box off
-   end
-   legend({'Primary 1' 'Primary 2' 'Primary 3'});
 end

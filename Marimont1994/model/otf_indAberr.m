@@ -32,4 +32,5 @@ if dispFig
    xlabel('Spatial frequency (cpd)');
    ylabel('Wavelength (nm)');
    box off
+   set(gca,'View',[67.3 32.4]);
 end

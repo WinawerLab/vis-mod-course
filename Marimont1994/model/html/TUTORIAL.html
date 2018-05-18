@@ -1,0 +1,318 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>Color matching with chromatic aberration; Marimont &amp; Wandell, 1994</title><meta name="generator" content="MATLAB 9.2"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-05-18"><meta name="DC.source" content="TUTORIAL.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h1>Color matching with chromatic aberration; Marimont &amp; Wandell, 1994</h1><!--introduction--><p>When color matching experiments are performed with large uniform fields, we can typically ignore the effects of chromatic aberration imposed by the optics of the eye. Such experiments have been very successful in characterizing the relationship between the encoding of light by the photopigments and the physiological response (and spectral sensitivity distribution) of the photoreceptors. However when matching spatial patterns, we have to take into account that each wavelength incurs a different amount of defocus and that this defocus depends on the spatial pattern incident on the cornea (i.e., axial chromatic aberration).</p><p>This tutorial will guide you through an implementation of Marimont &amp; Wandell's model of color matching for spatial patterns that considers the effect of chromatic aberration.</p><!--/introduction--><h2>Contents</h2><div><ul><li><a href="#1">Parameter set-up</a></li><li><a href="#5">Optical Transfer function (OTF)</a></li><li><a href="#9">Add wavelength-independent aberrations</a></li><li><a href="#12">Linespread function</a></li><li><a href="#15">Cone photopigment sensitivities</a></li><li><a href="#18">Color matching</a></li><li><a href="#23">Recreate Figure 7b</a></li></ul></div><h2 id="1">Parameter set-up</h2><p>Thare are 7 parameters in this model:</p><pre class="codeinput"><span class="comment">% dx           samples per degree</span>
+<span class="comment">% dLambda      linearly spaced wavelength samples between 400 and 700 nm</span>
+<span class="comment">% dLambda      linearly spaced wavelength samples between 400 and 700 nm</span>
+<span class="comment">% q            1x3 vector containing the variables q1, q2, and q3 for converting</span>
+<span class="comment">%              defocus to optical path length error</span>
+<span class="comment">% defocus      dioptric power of the unaccommodated eye</span>
+<span class="comment">% pupilRadius  radius of the pupil in meters</span>
+<span class="comment">% degPreM      multiplicative inverse of meters per degree</span>
+<span class="comment">% im           nxm matrix of a 1-dimensional image. When n=3, each row is taken as</span>
+<span class="comment">%              a different color channel. When n=1, the same image is repeated in</span>
+<span class="comment">%              each color channel.</span>
+</pre><p>The default parameters will recreate the figures in Marimont &amp; Wandell (1994). To use the defaults, simply run:</p><pre class="codeinput">params = inputParams
+</pre><pre class="codeoutput">
+params = 
+
+  struct with fields:
+
+             dx: 40
+        dLambda: 31
+              q: [1.7312 0.6335 0.2131]
+        defocus: 59.9404
+    pupilRadius: 0.0015
+        degPerM: 3.4340e+03
+             im: [1&times;40 double]
+          space: [1&times;40 double]
+         lambda: [1&times;31 double]
+           freq: [1&times;40 double]
+
+</pre><p>NOTE: The default image is a step function. The added, "space", "lambda", and "freq" fields contain the spatial extent, wavelength range, and spatial frequencies, respectively. The values in these fields depend on the parameters inputted.</p><h2 id="5">Optical Transfer function (OTF)</h2><p>Given the inputted parameters, we can calculate the defocus for different spatial frequencies at each wavelength (i.e., the OTF).</p><p>We set dispFig to 1 so that figures will be displayed.</p><pre class="codeinput">dispFig = 1;
+</pre><p>Then, we can input the parameters into the otf function to recreate Figure 2.</p><pre class="codeinput">params = otf(params,dispFig);
+</pre><img vspace="5" hspace="5" src="TUTORIAL_01.png" style="width:560px;height:420px;" alt=""> <p>NOTE: The params structure will be updated to include the OTF in a field titled "otf." By storing these new variables in the params structure, we can keep feeding the same params variable into each function.</p><pre class="codeinput">params
+</pre><pre class="codeoutput">
+params = 
+
+  struct with fields:
+
+             dx: 40
+        dLambda: 31
+              q: [1.7312 0.6335 0.2131]
+        defocus: 59.9404
+    pupilRadius: 0.0015
+        degPerM: 3.4340e+03
+             im: [1&times;40 double]
+          space: [1&times;40 double]
+         lambda: [1&times;31 double]
+           freq: [1&times;40 double]
+            otf: [31&times;40 double]
+
+</pre><h2 id="9">Add wavelength-independent aberrations</h2><p>In addition to axial chromatic aberration, there also exist wavlength-independent aberrations. Here, we modulate the OTF with these wavelength-independent aberrations to recreate Figure 3.</p><pre class="codeinput">params = otf_indAberr(params,dispFig);
+</pre><img vspace="5" hspace="5" src="TUTORIAL_02.png" style="width:560px;height:420px;" alt=""> <p>NOTE: The "otf" field in the params structure will be updated to contain the modulated OTF.</p><h2 id="12">Linespread function</h2><p>We can take the inverse Fourier transform of the OTF to generate the linespread function at each wavelength. This transform will recreate Figure 4.</p><pre class="codeinput">params = otf2Linespread(params,dispFig);
+</pre><img vspace="5" hspace="5" src="TUTORIAL_03.png" style="width:560px;height:420px;" alt=""> <p>NOTE: The params structure will now contain a "linespread" field containing the linespread functions.</p><h2 id="15">Cone photopigment sensitivities</h2><p>Now that we have a model of how different spatial frequencies are transferred through the optics, we can obtain the spectral sensitivities of the photopigments by projecting their spectral sensitivities (as measured via large uniform test fields; stored in cones.mat) onto the OTF.</p><p>This will recreate Figure 5.</p><pre class="codeinput">params = otf2Cones(params,dispFig);
+</pre><img vspace="5" hspace="5" src="TUTORIAL_04.png" style="width:560px;height:420px;" alt=""> <p>NOTE: The params structure will now contain a "cones" field containing the spectral sensitivities of each cone. This field will contain a 3 x dLambda matrix.</p><h2 id="18">Color matching</h2><p>Now that we have the sensitivity of each photopigment to a range of spatial frequencies and wavelengths, we can simulate the classical color matching experiments but with spatial patterns. To simulate a color matching experiment we need our spatial pattern and the two displays that we want to match. These displays are characterized by 3 x dLambda matrices containing spectral power distributions (SPD) of the primary light sources. 3 such matrices are stored in phosphors.mat so let's load those.</p><pre class="codeinput">load <span class="string">phosphors</span>
+</pre><p>We will use displays p1 and p2 as these match the SPDs in Figure 6.</p><pre class="codeinput">figure(<span class="string">'Name'</span>,<span class="string">'Display primaries'</span>);
+disps = {p1 p2};
+col = <span class="string">'rgb'</span>;
+<span class="keyword">for</span> d = 1:length(disps)
+   subplot(1,2,d);
+   <span class="keyword">for</span> j = 1:size(disps{d},1)
+      plot(params.lambda*10^9,disps{d}(j,:),[col(j),<span class="string">'-'</span>]); hold <span class="string">on</span>
+   <span class="keyword">end</span>
+   title(sprintf(<span class="string">'Display %i'</span>,d));
+   set(gca,<span class="string">'TickDir'</span>,<span class="string">'out'</span>);
+   xlabel(<span class="string">'Wavelength (nm)'</span>);
+   ylabel(<span class="string">'Power'</span>);
+   box <span class="string">off</span>
+<span class="keyword">end</span>
+legend({<span class="string">'Primary 1'</span> <span class="string">'Primary 2'</span> <span class="string">'Primary 3'</span>});
+</pre><img vspace="5" hspace="5" src="TUTORIAL_05.png" style="width:560px;height:420px;" alt=""> <p>Given the primaries of display 1 and the resulting photopigment absorptions due to the inputted step pattern, we can obtain the matching pattern in display 2 by projecting the SPDs of each of the primaries onto the photopigments' response. This color-matched pattern can be obtained by running colorMatch as follows:</p><pre class="codeinput">colorMatch(params,p1,p2,dispFig);
+</pre><img vspace="5" hspace="5" src="TUTORIAL_06.png" style="width:560px;height:420px;" alt=""> <p>This recreates Figure 7a. However, note that the amplitude of the photopigment response and of the pattern in display 2 are different from those in Figure 7. This is presumably due to a difference in sampling rates (i.e., dx) between this demonstration and those used by the original authors.</p><h2 id="23">Recreate Figure 7b</h2><p>To demonstrate the flexibility of this implementation, let's recreate Figure 7b, in which the input image is an impulse function. To change the input image while keeping all the default parameters, all we need to do is run inputParams again, but this time, we must input a params structure with a field containing the new image:</p><pre class="codeinput">im = zeros(1,params.dx);
+im(floor(length(im)/2)) = 1;
+clear <span class="string">params</span>
+params.im = im;
+inputParams(params)
+</pre><pre class="codeoutput">
+ans = 
+
+  struct with fields:
+
+             im: [1&times;40 double]
+             dx: 40
+        dLambda: 31
+              q: [1.7312 0.6335 0.2131]
+        defocus: 59.9404
+    pupilRadius: 0.0015
+        degPerM: 3.4340e+03
+          space: [1&times;40 double]
+         lambda: [1&times;31 double]
+           freq: [1&times;40 double]
+
+</pre><p>Notice that the image is now an impulse but all the other parameters are the same as before. Thus, when parameters are left unspecified when inputted into inputParams, the default paramaters are used.</p><p>With this new params structure, let's rerun the workflow that we've stepped through above. Instead of running through each function individually, we can just execute runColorMatch as this will call all the necessary functions.</p><pre class="codeinput">runColorMatch(params,p1,p2,1);
+</pre><img vspace="5" hspace="5" src="TUTORIAL_07.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="TUTORIAL_08.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="TUTORIAL_09.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="TUTORIAL_10.png" style="width:560px;height:420px;" alt=""> <img vspace="5" hspace="5" src="TUTORIAL_11.png" style="width:560px;height:420px;" alt=""> <p>Figure 7b has been recreated.</p><p>END-OF-TUTORIAL</p><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2017a</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% Color matching with chromatic aberration; Marimont & Wandell, 1994
+% When color matching experiments are performed with large uniform fields, we can
+% typically ignore the effects of chromatic aberration imposed by the optics of 
+% the eye.
+% Such experiments have been very successful in characterizing the relationship 
+% between the encoding of light by the photopigments and the physiological response 
+% (and spectral sensitivity distribution) of the photoreceptors. However when 
+% matching spatial patterns, we have to take into account that each wavelength incurs 
+% a different amount of defocus and that this defocus depends on the spatial pattern 
+% incident on the cornea (i.e., axial chromatic aberration).
+%
+% This tutorial will guide you through an implementation of Marimont & Wandell's 
+% model of color matching for spatial patterns that considers the effect of
+% chromatic aberration.
+
+%%
+%% Parameter set-up
+% Thare are 7 parameters in this model:
+
+% dx           samples per degree
+% dLambda      linearly spaced wavelength samples between 400 and 700 nm
+% dLambda      linearly spaced wavelength samples between 400 and 700 nm
+% q            1x3 vector containing the variables q1, q2, and q3 for converting
+%              defocus to optical path length error
+% defocus      dioptric power of the unaccommodated eye
+% pupilRadius  radius of the pupil in meters
+% degPreM      multiplicative inverse of meters per degree
+% im           nxm matrix of a 1-dimensional image. When n=3, each row is taken as
+%              a different color channel. When n=1, the same image is repeated in 
+%              each color channel.
+%%
+% The default parameters will recreate the figures in Marimont & Wandell (1994). 
+% To use the defaults, simply run:
+
+params = inputParams
+%%
+% NOTE: The default image is a step function. The added, "space", "lambda", and
+% "freq" fields contain the spatial extent, wavelength range, and spatial 
+% frequencies, respectively. The values in these fields depend on the parameters 
+% inputted.
+%%
+
+%% Optical Transfer function (OTF)
+% Given the inputted parameters, we can calculate the defocus for different spatial 
+% frequencies at each wavelength (i.e., the OTF).
+%%
+% We set dispFig to 1 so that figures will be displayed.
+dispFig = 1;
+%%
+% Then, we can input the parameters into the otf function to recreate Figure 2.
+params = otf(params,dispFig);
+%%
+% NOTE: The params structure will be updated to include the OTF in a field titled
+% "otf." By storing these new variables in the params structure, we can keep feeding
+% the same params variable into each function.
+params
+
+%% Add wavelength-independent aberrations
+% In addition to axial chromatic aberration, there also exist wavlength-independent
+% aberrations. Here, we modulate the OTF with these wavelength-independent
+% aberrations to recreate Figure 3.
+%%
+params = otf_indAberr(params,dispFig);
+%%
+% NOTE: The "otf" field in the params structure will be updated to contain the 
+% modulated OTF.
+
+%% Linespread function
+% We can take the inverse Fourier transform of the OTF to generate the linespread
+% function at each wavelength. This transform will recreate Figure 4.
+%%
+params = otf2Linespread(params,dispFig);
+%%
+% NOTE: The params structure will now contain a "linespread" field containing the 
+% linespread functions.
+
+%% Cone photopigment sensitivities
+% Now that we have a model of how different spatial frequencies are
+% transferred through the optics, we can obtain the spectral sensitivities of the
+% photopigments by projecting their spectral sensitivities (as measured via large
+% uniform test fields; stored in cones.mat) onto the OTF.
+%
+% This will recreate Figure 5.
+
+%%
+params = otf2Cones(params,dispFig);
+%%
+% NOTE: The params structure will now contain a "cones" field containing the spectral
+% sensitivities of each cone. This field will contain a 3 x dLambda matrix.
+
+%% Color matching 
+% Now that we have the sensitivity of each photopigment to a range of spatial
+% frequencies and wavelengths, we can simulate the classical color matching
+% experiments but with spatial patterns. To simulate a color matching experiment we 
+% need our spatial pattern and the two displays that we want to match. These displays
+% are characterized by 3 x dLambda matrices containing spectral power distributions
+% (SPD) of the primary light sources. 3 such matrices are stored in phosphors.mat so 
+% let's load those.
+%%
+load phosphors
+%%
+% We will use displays p1 and p2 as these match the SPDs in Figure 6.
+figure('Name','Display primaries');
+disps = {p1 p2};
+col = 'rgb';
+for d = 1:length(disps)
+   subplot(1,2,d);
+   for j = 1:size(disps{d},1)
+      plot(params.lambda*10^9,disps{d}(j,:),[col(j),'-']); hold on
+   end
+   title(sprintf('Display %i',d));
+   set(gca,'TickDir','out');
+   xlabel('Wavelength (nm)');
+   ylabel('Power');
+   box off
+end
+legend({'Primary 1' 'Primary 2' 'Primary 3'});
+%%
+% Given the primaries of display 1 and the resulting photopigment absorptions due to
+% the inputted step pattern, we can obtain the matching pattern in display 2 by 
+% projecting the SPDs of each of the primaries onto the photopigments' response. 
+% This color-matched pattern can be obtained by running colorMatch as follows:
+colorMatch(params,p1,p2,dispFig);
+%%
+% This recreates Figure 7a. However, note that the amplitude of the photopigment
+% response and of the pattern in display 2 are different from those in Figure 7.
+% This is presumably due to a difference in sampling rates (i.e., dx) between this 
+% demonstration and those used by the original authors.
+
+%% Recreate Figure 7b
+% To demonstrate the flexibility of this implementation, let's recreate Figure 7b, 
+% in which the input image is an impulse function. To change the input image while 
+% keeping all the default parameters, all we need to do is run inputParams again, 
+% but this time, we must input a params structure with a field containing the new 
+% image:
+%%
+im = zeros(1,params.dx);
+im(floor(length(im)/2)) = 1;
+clear params
+params.im = im;
+inputParams(params)
+%%
+% Notice that the image is now an impulse but all the other parameters are the same
+% as before. Thus, when parameters are left unspecified when inputted into 
+% inputParams, the default paramaters are used.
+%
+% With this new params structure, let's rerun the workflow that we've stepped through
+% above. Instead of running through each function individually, we can just execute
+% runColorMatch as this will call all the necessary functions.
+%%
+runColorMatch(params,p1,p2,1);
+%%
+% Figure 7b has been recreated.
+%%
+% END-OF-TUTORIAL
+
+##### SOURCE END #####
+--></body></html>

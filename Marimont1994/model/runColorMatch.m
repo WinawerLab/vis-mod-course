@@ -24,7 +24,7 @@ end
 p = otf(p,dispFig);
 
 %% Add chromatic-independent aberrations
-p = otf_independentAberr(p,dispFig);
+p = otf_indAberr(p,dispFig);
 
 %% Generate linespread
 p = otf2Linespread(p,dispFig);

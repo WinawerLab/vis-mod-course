@@ -43,6 +43,7 @@ if dispFig
       xlabel('Spatial frequency (cpd)');
       ylabel('Wavelength (nm)');
       box off
+      set(gca,'View',[67.3 32.4]);
       title(plotTitles(i));
 
       subplot(3,2,(i-1)*2+2);
