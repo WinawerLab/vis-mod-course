@@ -14,3 +14,8 @@ gratings, drifting bars, and drifting dots. Please refer to the "Adelson1985_tut
 for a simple tutorial of the model (by applying impulse stimuli). For other types of 
 stimuli, please refer to the file "trialDot" for drifting dot stimuli, "trialSin" for 
 drifting sinusoidal grating and "trialBar" for drifting bar.
+
+Running the tutorial and sinuosidal grating stimuli do not require any other packages. However, running dot and bar stimuli 
+require
+an installation of the MT model package available at http://www.cns.nyu.edu/~lcv/MTmodel/. We also provide the package as 
+a zip file "MT Model" within the folder.
