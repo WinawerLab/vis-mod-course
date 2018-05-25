@@ -18,3 +18,7 @@ Photo receptor level:
 V1:
 
 (5) Fleet, Wagner, & Heeger (1996). Neural encoding of binocular disparity: Energy models, position shifts and phase shifts Vision Research.
+
+MT:
+
+(6) Adelson, E. H., & Bergen, J. R. (1985). Spatiotemporal energy models for the perception of motion. Josa a, 2(2), 284-299.
