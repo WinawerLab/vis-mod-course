@@ -94,7 +94,7 @@ for ii = 1:length(x_nameIdx)
     fittedVals{ii} = temp;
     ogecc{ii} = ecc;
     ogy{ii}=y;
-    params{ii} = x;
+    params(:,ii) = x;
     clear temp ecc y 
     %interpolate to match xvals
     %interpFit{ii} = interp(temp,3);
@@ -114,10 +114,43 @@ for ii = 1:length(x_nameIdx)
     xlabel('Eccentricity (deg)'); ylabel('Density (deg^-^2)');
     title(titleNames{ii}); 
 end
+
+%% Use fitted params to plot entire curve
+for ii = 1:length(x_nameIdx)
+    y = eval(y_nameIdx{ii}); y = y(1:end)'; 
+    ecc = eval(x_nameIdx{ii}); ecc = ecc(1:end)';
+    [~,fit{ii}] = fit_displacementZone(params(:,ii),y,ecc);
+    ogecc{ii} = ecc;
+end
+%plot
+figure;
+for ii = 1:length(x_nameIdx)
+    subplot(2,2,ii);loglog(ogecc{ii},fit{ii},'-k','linewidth',2); hold on; grid on
+    subplot(2,2,ii);loglog(eval(x_nameIdx{ii}),eval(y_nameIdx{ii}),'.r','markersize',10); 
+    xlim([0.1 100]); ylim([0.1 10^5])
+    if ii == 1
+        line([11, 11],ylim,'linestyle',':','color','k','linewidth',2);
+    else
+        line([17, 17],ylim,'linestyle',':','color','k','linewidth',2);
+    end
+    xlabel('Eccentricity (deg)'); ylabel('Density (deg^-^2)');
+    title(titleNames{ii}); 
+end
+paper_p = [0.9851,1.058,22.14;...
+           0.9935,1.035,16.35;...
+           0.9729,1.084,7.633;...
+           0.9960,0.9932,12.13];
+%seems like fmincon does a better job of fitting the points ... there are
+%some big differences in the last parameter
+disp('Here are the fmincon params:'); 
+disp('Each column is a retinal location (from left: temporal/superior/nasal/inferior)'); disp(' ');
+disp(num2str(params)); disp(' ');
+disp('Here are the paper params:'); disp(' ');
+disp(num2str(paper_p')); disp(' ');
 %% replot the fits in their own plot (figure 5 - only plotting displacement zone)
 figure;
-loglog(ogecc{1},fittedVals{1},'r',ogecc{2},fittedVals{2},'b',...
-    ogecc{3},fittedVals{3},'g',ogecc{4},fittedVals{4},'k','linewidth',2);
+loglog(ogecc{1},fit{1},'r',ogecc{2},fit{2},'b',...
+    ogecc{3},fit{3},'g',ogecc{4},fit{4},'k','linewidth',2);
 xlim([8 100]);
 line([11 11],ylim,'color','k','linestyle','-');
 line([17 17],ylim,'color','k','linestyle','--');
