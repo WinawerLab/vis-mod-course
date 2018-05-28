@@ -1,4 +1,4 @@
-function [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver)
+function cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver, segment, verbose)
 
   % Compute x,y position in m of center of retinal patch from ecc and angle
     [x, y] = pol2cart(expParams.polarangle, thisEccen);
@@ -15,24 +15,22 @@ function [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams
     cMosaic.setSizeToFOV(regMosaicParams.cmFOV);
 
     % Add photon noise
-%     if whichObserver == 'human'
-%         cMosaic.noiseFlag = 'random';
-%     else
-    cMosaic.noiseFlag = 'none';
+    if whichObserver == 'human'
+        cMosaic.noiseFlag = 'random';
+    else
+        cMosaic.noiseFlag = 'none';
+    end
 
     % Not sure why these have to match, but there is a bug if they don't.
     cMosaic.integrationTime = ois(1).timeStep;
 
     % There are no eyemovements, but I think you need to have emPaths defined in
     % order to get time varying absorption rates (because it's an oisSequence)
-    regMosaicParams.em        = emCreate;
-    regMosaicParams.em.emFlag =  [0 0 0]';
-    emPaths  = cMosaic.emGenSequence(ois(1).length, 'nTrials', expParams.nTrials, ...
-        'em', regMosaicParams.em);
-    cMosaic.emPositions = emPaths;
+    cMosaic.emGenSequence(ois(1).length, 'nTrials', 1);    
+    cMosaic.emPositions = zeros(1,ois(1).length,2);
 
     % implement th inner segment aperture to correct for proportion covered
-    propCovered = getBanks1991ConeCoverage(thisEccen);
+    propCovered = getBanks1991ConeCoverage(thisEccen, 'coneSegment', segment, 'verbose', verbose);
 
     cMosaic.pigment.pdWidth  = cMosaic.pigment.width*propCovered;
     cMosaic.pigment.pdHeight = cMosaic.pigment.height*propCovered;

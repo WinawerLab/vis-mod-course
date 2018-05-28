@@ -1,4 +1,4 @@
-%% s_IOM_Banksetal1991
+%% s_mainAnalysis.m
 
 % Script to create an ideal observer model based on the article by Banks et
 % al. 1991
@@ -59,8 +59,9 @@
 verbose = false;
 deg2m    = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
 
-whichObserver = 'ideal'; % choose between 'ideal' or 'human'
-
+whichObserver = 'ideal'; % choose from 'ideal' or 'human'
+segment       = 'inner'; % choose from 'inner' or 'outer' cone segment
+saveResults   = true;
 %% 1. Specify experiment parameters
 
 % Load experiment parameters
@@ -106,7 +107,7 @@ for thisEccen = 10;%expParams.eccen(:,1)'
 %             betaAbsorptions = []; %alpha_absorptions;
 
 
-            [cMosaic, emPaths] = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver);
+            cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver, segment, verbose);
 
             for c = expParams.contrastLevels
 
@@ -135,8 +136,8 @@ for thisEccen = 10;%expParams.eccen(:,1)'
 
                 % Compute absorptions 6D
                 % (contrast x SF x trials x cols x rows x time points)
-                alphaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(1), 'currentFlag', false, 'emPaths', emPaths);
-                betaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(2), 'currentFlag', false, 'emPaths', emPaths);
+                alphaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(1), 'currentFlag', false);
+                betaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(2), 'currentFlag', false);
 
             end
             
@@ -147,69 +148,30 @@ end
 % Visualize cone mosaic absorptions
 if verbose; cMosaic.window; end
 
-    %% 5. Calculate sensitivity (d-prime)
+%% 5. Calculate sensitivity (d-prime)
 
-    % Likelihood
-    dPrime = dPrimeFunction;
+% Likelihood
+dPrime = dPrimeFunction;
 
-    thisdPrime = [];
-    for c = 1:length(expParams.contrastLevels)
-        for sf=1:9
+thisdPrime = [];
+for c = 1:length(expParams.contrastLevels)
+    for sf=1:9
 
-            this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
-            this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
+        this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
+        this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
 
-            thisdPrime(c, sf) = dPrime(this_alpha,this_beta);
+        thisdPrime(c, sf) = dPrime(this_alpha,this_beta);
 
-        end
     end
-
-            
-
-
-
-
-%% debug ideal observer
-threshold = 1.36/sqrt(2);
-
-for ii = 1:9, label{ii} = sprintf('%1.3f',expParams.sf(1,ii)); end
-
-
-figure; set(gcf, 'Color', 'w'); clf; hold on;
-cmap = jet(9);
-for ii = 1:9
-    plot(expParams.contrastLevels*100, thisdPrime(:,ii), 'Color', cmap(ii,:,:))    
 end
 
-plot([0.1 100], [threshold, threshold],'k--')
-% plot([0.1 100], [1.36, 1.36],'r--')
-xlim([0.1 100]); ylim([0.1 100]);
-xlabel('Contrast (Michelson)')
-ylabel('Contrast Sensitivity (d prime)'); title('Figure 3')
-set(gca, 'XScale', 'log', 'YScale', 'log')
-set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'})
-set(gca, 'YTick', [0.1, 1, 10, 100], 'YTickLabel', {'0.1', '1', '10', '100'})
-legend(label);
 
-
-%% Plot Sensitivity for every stimulus contrast level 
-[val_tresh, idx_thresh] = min(abs(thisdPrime-threshold));
-sensitivity = 1./(expParams.contrastLevels(idx_thresh));
-
-figure;
-plot([0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8],sensitivity);
-
-set(gca,'XScale','log'); xlim([.1 100]); ylim([1 1000]);
-legend(label);
-xlabel('Spatial frequency (cpd)')
-ylabel('Contrast Sensitivity')
-set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'})
-set(gca, 'YTick', [1, 10, 100, 1000], 'YTickLabel', {'1', '10', '100', '1000'})
-
-
-title('CSF eccen 10')
-box off;
-
+if saveResults
+    saveDir = fullfile(banksRootPath, 'results'); 
+    if ~exist(saveDir, 'dir'); mkdir(saveDir); end
+    save(fullfile(saveDir, sprintf('dPrime_%s_%s_eccen%d.mat', whichObserver, segment, thisEccen)), 'thisdPrime');   
+end
+    
 
 
 
