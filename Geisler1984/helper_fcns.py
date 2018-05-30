@@ -27,19 +27,23 @@ class Our_Gauss():
         self.amplitude = amplitude
         self.sigma = sigma
         # the first x/y coordinate should be less than 0; second should be > 0; if not, correct
-        dist_x = [-4.25 + mu[0], 4.25 + mu[0]];
-        dist_y = [-4.25 + mu[1], 4.25 + mu[1]];
+        dist_x = [-4.25 + mu[0], 4.25 + mu[0]]
+        dist_y = [-4.25 + mu[1], 4.25 + mu[1]]
 
         if dist_x[0] > 0:
-          dist_x[0] = -2; # go two degrees to the left of 0
+            # go two degrees to the left of 0
+            dist_x[0] = -2
         if dist_x[1] < 0:
-          dist_x[1] = 2; # same
+            # same
+            dist_x[1] = 2
         if dist_y[0] > 0:
-          dist_y[0] = -2; # go two degrees to the left of 0
+            # go two degrees to the left of 0
+            dist_y[0] = -2
         if dist_y[1] < 0:
-          dist_y[1] = 2; # same
+            # same
+            dist_y[1] = 2
 
-        # now evaluate 
+        # now evaluate
         x = np.linspace(dist_x[0], dist_x[1], norm_sampling)
         y = np.linspace(dist_y[0], dist_y[1], norm_sampling)
         example_psf = self._exp_func(x, y, mu[0], mu[1], sigma, amplitude)
@@ -66,17 +70,21 @@ class Pointspread_Function(Our_Gauss):
         self.gauss1 = Our_Gauss(mu, amplitude[0], sigma[0], norm_sampling)
         self.gauss2 = Our_Gauss(mu, amplitude[1], sigma[1], norm_sampling)
         # the first x/y coordinate should be less than 0; second should be > 0; if not, correct
-        dist_x = [-4.25 + mu[0], 4.25 + mu[0]];
-        dist_y = [-4.25 + mu[1], 4.25 + mu[1]];
+        dist_x = [-4.25 + mu[0], 4.25 + mu[0]]
+        dist_y = [-4.25 + mu[1], 4.25 + mu[1]]
 
         if dist_x[0] > 0:
-          dist_x[0] = -2; # go two degrees to the left of 0
+            # go two degrees to the left of 0
+            dist_x[0] = -2
         if dist_x[1] < 0:
-          dist_x[1] = 2; # same
+            # same
+            dist_x[1] = 2
         if dist_y[0] > 0:
-          dist_y[0] = -2; # go two degrees to the left of 0
+            # go two degrees to the left of 0
+            dist_y[0] = -2
         if dist_y[1] < 0:
-          dist_y[1] = 2; # same
+            # same
+            dist_y[1] = 2
 
         # now evaluate
         x = np.linspace(dist_x[0], dist_x[1], norm_sampling)
@@ -302,7 +310,8 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     plt.title('INTENSITY DISCRIMINATION')
     return solts
 
-def resolution_task(deltaTheta, lum=4, debug=False):
+
+def resolution_task(deltaTheta, lum=4, norm_sampling=101, debug=False):
     """run the resolution task
 
     In this task, the ideal observer is trying to differentiate between one stimulus of luminance
@@ -316,12 +325,16 @@ def resolution_task(deltaTheta, lum=4, debug=False):
 
     lum: float. Luminance of the first stimulus.
 
+    norm_sampling: int. How finely to sample the Gaussian of our pointspread function when we
+    normalize it. The higher this is, the longer it will take to initialize, but the more accurate
+    the norming will be. However, increasing it beyond 101 doesn't seem to help too much.
+
     debug: boolean. if True, also returns the photoreceptors coordinates and the lists showing
     the amount absorbed in tasks a and b at each of those locations.
     """
-    single_psf = Pointspread_Function((0, 0), norm_sampling=norm_samp)
-    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0), norm_sampling=norm_samp)
-    double_psf_2 = Pointspread_Function((deltaTheta/2., 0), norm_sampling=norm_samp)
+    single_psf = Pointspread_Function((0, 0), norm_sampling=norm_sampling)
+    double_psf_1 = Pointspread_Function((-deltaTheta/2., 0), norm_sampling=norm_sampling)
+    double_psf_2 = Pointspread_Function((deltaTheta/2., 0), norm_sampling=norm_sampling)
     photoreceptors = get_photoreceptor_locations(np.maximum(4.25, deltaTheta),
                                                  np.maximum(4.25, deltaTheta))
     absorbed_a = mean_photons_absorbed(single_psf, photoreceptors, lum)
@@ -349,7 +362,7 @@ def optimize_resolution_task(lum, d_prime_target=1.36):
     return optimize.minimize(obj_func, 10/(lum/.01), bounds=bounds)
 
 
-def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor=0):
+def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, norm_sampling=101):
     """recreate figure 5
 
     there are several differences between this and the figure in the Geisler paper:
@@ -362,6 +375,10 @@ def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor
 
     3. The part of our line that is straight is parallel to the corresponding line in Geisler's
     figure, but does not have the same values.
+
+    norm_sampling: int. How finely to sample the Gaussian of our pointspread function when we
+    normalize it. The higher this is, the longer it will take to initialize, but the more accurate
+    the norming will be. However, increasing it beyond 101 doesn't seem to help too much.
     """
     solts = []
     for l in lum:
