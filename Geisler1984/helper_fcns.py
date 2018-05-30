@@ -131,15 +131,6 @@ def get_photoreceptor_locations(x_minutes, y_minutes):
     return np.vstack([list(itertools.product(x1, y1)), list(itertools.product(x2, y2))])
 
 
-def get_middle(x, dim=0):
-    """get the middle index of x along dimension dim
-    """
-    mid = x.shape[dim] / 2
-    if mid == np.floor(mid):
-        warnings.warn("x has no middle index, returning the floor instead")
-    return int(np.floor(mid))
-
-
 def gauss_1d(x, amplitude, sigma):
     """generate 1d Gaussian centered at 0
     """
@@ -387,8 +378,9 @@ def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, norm_samplin
         solts.append([solt.x[0], resolution_task(solt.x, l, norm_sampling)[1]])
     solts = np.array(solts)
     # this returns deltaTheta in arc-minutes, we want it in arc-seconds
-    plt.semilogy(np.log10(solts[:, 1]), solts[:, 0] * 60, label='Our solution', zorder=3)
+    plt.semilogy(np.log10(solts[:, 1]), solts[:, 0] * 60, label='Our solution')
     plt.plot([.84025, 5.18603], [58.385, 4.47235], label='Geisler, 1984')
+    plt.axhline(36, linestyle='--', label='Photoreceptor diameter', zorder=0) # size of photoreceptor in arc-seconds
     plt.legend()
     plt.xlabel('LOG N')
     plt.ylabel('$\Delta\Theta$ (arc-seconds)')
