@@ -3,14 +3,8 @@
 import warnings
 import itertools
 import numpy as np
-import pandas as pd
-from scipy.signal import convolve2d
 from scipy import optimize
-from scipy import interpolate
 import matplotlib.pyplot as plt
-
-
-MIN_PER_PIX = .02
 
 
 class Our_Gauss():
@@ -97,26 +91,41 @@ class Pointspread_Function(Our_Gauss):
         else:
             return value
 
-# This function creates (x, y) coordinate pairs for where each photoreceptor in our lattice is centered.
-# The construction here is based off of the construct_photoreceptor_lattice below.
-# We accomplish this by tiling two x-y row pairs: 
-#   the first is centered on 0 in X and Y; 
-#   the second is offset in X by receptor_diameter/2, and receptor_height_offset in Y
-# In both cases, each x location is offset by receptor_diameter and each y location by 2*receptor_height_offset
+
 def get_photoreceptor_locations(x_minutes, y_minutes):
-    """go out x_minutes in each direction
+    """Returns (x, y) coordinate pairs for the center of each photoreceptor in our lattice.
+
+    We accomplish this by tiling two x-y row pairs:
+
+    - the first is centered on 0 in X and Y
+
+    - the second is offset in X by receptor_diameter/2, and receptor_height_offset in Y (both of
+    which are determined by the physiology and taken from the Geisler paper)
+
+    In both cases, each x location is offset by receptor_diameter and each y location by
+    2*receptor_height_offset
+
+    x_minutes and y_minutes specify the distance (in arc-minutes) that we go out in either
+    direction (so the resulting lattice will go from -x_minutes to x_minutes in the horizontal
+    direction and similarly in for the vertical)
     """
     receptor_diameter = .6
     # this is approximately (.6/2)*tan(pi/3)
     receptor_height_offset = .52
-    x1 = np.union1d(np.arange(0, x_minutes, receptor_diameter), np.arange(0, -x_minutes, -receptor_diameter))
-    y1 = np.union1d(np.arange(0, y_minutes, 2*receptor_height_offset), np.arange(0, -y_minutes, -2*receptor_height_offset))
-    x2 = np.union1d(np.arange(receptor_diameter/2, x_minutes, receptor_diameter), np.arange(receptor_diameter/2, -x_minutes, -receptor_diameter))
-    y2 = np.union1d(np.arange(receptor_height_offset, y_minutes, 2*receptor_height_offset), np.arange(receptor_height_offset, -y_minutes, -2*receptor_height_offset))
-    return np.vstack([list(itertools.product(x1,y1)), list(itertools.product(x2,y2))]);
+    x1 = np.union1d(np.arange(0, x_minutes, receptor_diameter),
+                    np.arange(0, -x_minutes, -receptor_diameter))
+    y1 = np.union1d(np.arange(0, y_minutes, 2*receptor_height_offset),
+                    np.arange(0, -y_minutes, -2*receptor_height_offset))
+    x2 = np.union1d(np.arange(receptor_diameter/2, x_minutes, receptor_diameter),
+                    np.arange(receptor_diameter/2, -x_minutes, -receptor_diameter))
+    y2 = np.union1d(np.arange(receptor_height_offset, y_minutes, 2*receptor_height_offset),
+                    np.arange(receptor_height_offset, -y_minutes, -2*receptor_height_offset))
+    return np.vstack([list(itertools.product(x1, y1)), list(itertools.product(x2, y2))])
 
 
 def get_middle(x, dim=0):
+    """get the middle index of x along dimension dim
+    """
     mid = x.shape[dim] / 2
     if mid == np.floor(mid):
         warnings.warn("x has no middle index, returning the floor instead")
@@ -161,218 +170,6 @@ def pointspread_function(x=np.linspace(-4.25, 4.25, 101), y=np.linspace(-4.25, 4
     return psf / np.trapz(np.trapz(psf, x), y)
 
 
-def construct_photoreceptor_lattice(n_receptors_per_side, scale_factor=0):
-    """construct hexagonal photoreceptor lattice with specified number of receptors
-
-    in the paper, the receptors are modeled as points in a hexagonal lattice, with each point
-    representing the center of the receptor and the distance between them (.6 arc-minutes)
-    corresponding to the diameter of the receptors. based on the number of receptors, we can then
-    determine the size of receptor lattice in visual degrees and we sample it finely enough so that
-    each pixel represents .02 arc-minutes, which allows us to approximate this hexagonal lattice
-    reasonably well (since we're trying to create a hexagonal lattice on a square grid, there's no
-    way to do it exactly).
-
-    we construct a basically square lattice. for example, if n_receptors_per_side=10, our lattice
-    will have 10 rows of 10 photoreceptors each. based on the fact that sizes of the receptor
-    lattice given in the paper were all square numbers (400, 10000), it seems reasonable to assume
-    Geisler did something similar.
-
-    Since each receptor center is .6 minutes apart, if we have row with 5 receptors, we'll need a
-    total of (5-1) * .6 = 2.4 arc-minutes for all receptors (the first and last receptors will then
-    be in the first and last pixel). Since the next row will be offset by .3 minutes (see fig 2 for
-    an example image), we'll need 2.7 arc-minutes in the x direction. finally, since each row is
-    separated by exactly .3*sqrt(3)~.52 minutes (there's no offset; this follows from the
-    trigonometry), we'll need (5-1) * .52 = 2.08 arc-minutes in the y direction. In order to make
-    sure we end up with an origin (0, 0), our lattice will run from a negative value to a positive
-    value (with absolute value equal to half the max), and this half-max value must be divisible by
-    .02. therefore our lattice is will be based on:
-
-    np.meshgrid(np.arange(-1.36, 1.36+.02, .02), np.arange(-1.04, 1.04+.02, .02))
-
-    (the extra `+.02` is there because of how python's range / numpy.arange works: they go up to
-    but don't include the max value, so we set it one step beyond the max value we actually want)
-
-    scale_factor: int. power of 2 by which to scale up the receptor lattice. If the minutes per
-    pixel is .02, we don't always have a fine enough sampling to find the correct dprime value. so
-    we need to scale it up (changing min_per_pix to .02 / 2 = .01 or .02 / 4 = .005) in order to
-    get a better sampling.
-
-    returns lattice, x_minutes, y_minutes, x, y. x/y_minutes are the number of minutes on either
-    side of 0 in the created lattice (so, from example above, 1.36 and 1.04, respectively). x and y
-    are the arrays that go from -x/y_minutes to +x/y_minutes and are necessary when calling the
-    other functions in this file
-    """
-    receptor_diameter = .6
-    # this is approximately (.6/2)*tan(pi/3)
-    receptor_height_offset = .52
-    min_per_pix = MIN_PER_PIX / 2**scale_factor
-    x_minutes = ((n_receptors_per_side - 1) * receptor_diameter + (receptor_diameter / 2.)) / 2
-    y_minutes = ((n_receptors_per_side - 1) * receptor_height_offset) / 2
-    if int(x_minutes / min_per_pix) != (x_minutes / min_per_pix):
-        x_minutes += min_per_pix / 2
-    if int(y_minutes / min_per_pix) != (y_minutes / min_per_pix):
-        y_minutes += min_per_pix / 2
-    x = np.arange(-x_minutes, x_minutes + min_per_pix, min_per_pix)
-    y = np.arange(-y_minutes, y_minutes + min_per_pix, min_per_pix)
-    lattice = np.zeros((len(y), len(x)))
-    # by construction, we know that all these divisions will return integers
-    for row_num, y_idx in enumerate(range(len(y))[::int(receptor_height_offset/min_per_pix)]):
-        if row_num % 2:
-            x_indices = range(len(x))[::int(receptor_diameter/min_per_pix)]
-        else:
-            # we subtract 1 here because python is 0 indexed
-            x_indices = range(len(x))[int((receptor_diameter/2)/min_per_pix)-1::int(receptor_diameter/min_per_pix)]
-        for x_idx in x_indices:
-            lattice[y_idx, x_idx] = 1
-    return lattice, x_minutes, y_minutes, x, y
-
-
-def visualize_receptor_lattice(lattice, x, y, mode='continuous', **kwargs):
-    """visualize the receptor lattice
-
-    using imshow doesn't work very well, because our receptors are only single pixels, they easily
-    get lost.
-
-    x and y are the arrays returned by construct_photoreceptor_lattice
-
-    mode: {'continuous', 'binary', 'categorical'}. only considered if the lattice we get has values
-    other than 0 and 1. in that case, if binary we plot points anywhere there's a non-zero value,
-    all the same color (set by the kwarg 'c', default black). if continuous, we use the color to
-    show what value. if categorical, we need a cmap (dictionary) that maps between the non-zero
-    values found in lattice and colors to plot with (by default we use {-1: 'red', 1: 'blue', 2:
-    'green'}, but you probably want to specify a better one).
-    """
-    rec_pos = np.where(lattice)
-    if not ((lattice == 0) | (lattice == 1)).all() and mode == 'continuous':
-        # then this isn't just 0s and 1s, and we need to grab colors
-        c = lattice[rec_pos]
-    elif not ((lattice == 0) | (lattice == 1)).all() and mode == 'categorical':
-        cmap = kwargs.pop('cmap', {-1: 'red', 1: 'blue', 2: 'green'})
-        c = [cmap[i] for i in lattice[rec_pos]]
-    else:
-        c = kwargs.pop('c', 'k')
-    ax = kwargs.pop('ax', plt.gca())
-    plotted = ax.scatter(x[rec_pos[1]], y[rec_pos[0]], c=c, **kwargs)
-    ax.set_xlim((x.min(), x.max()))
-    ax.set_ylim((y.min(), y.max()))
-    return plotted
-
-
-def minutes_to_n_receptors(arcmin_diam):
-    """given the size of an image in minutes, return the number of receptors necessary to have a
-    receptor lattice that is larger
-    """
-    # this is approximately (.6/2)*tan(pi/3)
-    receptor_height_offset = .52
-    return np.ceil(arcmin_diam / receptor_height_offset) + 1
-
-
-def retinal_image_convolution(lum, psf):
-    """calculate the retinal image by convolving the luminance distribution with the pointspread
-
-    note that you shouldn't interpret the numbers too much in the output from this function,
-    because we should probably do some scaling to account for the size of the pupil and the
-    transmittance of the ocular media. we handle that in the mean_photons_absorbed function
-    instead.
-    """
-    # 2D convolution. what we're creating is the image on the (specified patch of) retina and we're
-    # not modeling anything beyond that. so we'll throw everything away. Ideally, we just want to
-    # make sure that the image is big enough that we're not throwing anything away.
-    retinal_image = convolve2d(lum, psf, mode='same')
-    return retinal_image
-
-
-def retinal_image(lum, psf, lum_distance=None, output_shape=None):
-    """calculate retinal image from luminance points
-
-    lum_distance: in pixel, only necessar if more than one lum value
-    """
-    if not hasattr(lum, '__len__') or len(lum) == 1:
-        return lum * psf
-    else:
-        if output_shape is None:
-            retinal_image = np.zeros((psf.shape[0]+lum_distance, psf.shape[1]+lum_distance))
-        else:
-            retinal_image = np.zeros(output_shape)
-        center_0, center_1 = get_middle(retinal_image, 0), get_middle(retinal_image, 1)
-        psf_center_0, psf_center_1 = get_middle(psf, 0), get_middle(psf, 1)
-        lum_distance_half = int(np.floor(lum_distance / 2))
-        if np.mod(psf.shape[0], 2) == 1:
-            floor_factor_0 = 1
-        if np.mod(psf.shape[0], 2) == 0:
-            floor_factor_0 = 0
-        if np.mod(psf.shape[1], 2) == 1:
-            floor_factor_1 = 1
-        if np.mod(psf.shape[1], 2) == 0:
-            floor_factor_1 = 0
-        ymin = center_0 - psf_center_0
-        ymax = center_0 + psf_center_0 + floor_factor_0
-        xmin0 = center_1 - psf_center_1 - lum_distance_half
-        xmax0 = center_1 + psf_center_1 - lum_distance_half + floor_factor_1
-        xmin1 = center_1 - psf_center_1 + lum_distance_half
-        xmax1 = center_1 + psf_center_1 + lum_distance_half + floor_factor_1
-        lum0 = lum[0] * psf
-        lum1 = lum[1] * psf
-        if xmin0 < 0:
-            lum0 = lum0[:, -xmin0:]
-            lum0 = np.pad(lum0, ((0, 0), (0, -xmin0)), 'constant')
-            xmax0 += -xmin0
-            xmin0 = 0
-        elif xmax0 > retinal_image.shape[1]:
-            end_offset = retinal_image.shape[1]-(xmax0+1)
-            lum0 = lum0[:, :end_offset]
-            lum0 = np.pad(lum0, ((0, 0), (-end_offset, 0)), 'constant')
-            xmin0 += end_offset + 1
-            xmax0 = retinal_image.shape[1]
-        if xmin1 < 0:
-            lum1 = lum1[:, -xmin0:]
-            lum1 = np.pad(lum1, ((0, 0), (0, -xmin1)), 'constant')
-            xmax1 += -xmin1
-            xmin1 = 0
-        elif xmax1 > retinal_image.shape[1]:
-            end_offset = retinal_image.shape[1]-(xmax1+1)
-            lum1 = lum1[:, :end_offset]
-            lum1 = np.pad(lum1, ((0, 0), (-end_offset, 0)), 'constant')
-            xmin1 += end_offset + 1
-            xmax1 = retinal_image.shape[1]
-        retinal_image[ymin:ymax, xmin0:xmax0] += lum0
-        retinal_image[ymin:ymax, xmin1:xmax1] += lum1
-        return retinal_image
-
-
-def retina_photons_absorbed(retinal_image, receptor_lattice):
-    """return the receptor lattice, with values scaled to show the amount of photons absorbed
-    """
-    return retinal_image * receptor_lattice
-
-
-def mean_photons_absorbed(retinal_image, receptor_lattice, a=0.28, d=0.2, s=3.1416, t=0.68,
-                          e555=0.5):
-    """mean number of photons absorbed (eqt 2)
-
-    lum: luminance distr (parameterized by x, y) in cd/m2
-
-    psf: point-spread function (param. by x, y) [a.u.]
-
-    a: cross-sectional area of the receptor in sq minutes
-
-    d: duration of stimulus in seconds
-
-    s: pupil area in sq mm
-
-    t: transmittance of ocular media
-
-    e555: quantum efficiency of photoreceptor at lambda=555 nm
-
-    we first scale the retinal image by all the constants. we then sample the retinal image where
-    there are photoreceptors (as shown by the receptor lattice) and return this list of
-    values. this list contains the "mean photons absorbed" or alpha_i values for all photoreceptors
-    i.
-    """
-    photons_absorbed = a*d*s*t*e555 * 347.8 * retinal_image
-    return photons_absorbed[receptor_lattice.astype(bool)]
-
-
 def calc_d_prime(alpha, beta):
     """calculates d prime for two lists of photon absorptions, alpha and beta; equation 3
     """
@@ -414,65 +211,84 @@ def check_intensity_discrimination(alpha, beta):
     return abs(calc_deltaN(alpha, beta)) / np.sqrt(calc_N(alpha, beta))
 
 
-def intensity_discrimination_task(lum_a, lum_b):
-    """run the intensity discrimination task
+def mean_photons_absorbed(psf, photoreceptors, lum, a=.28, d=.2, s=3.1416, t=.68, e555=.5):
+    """calculate the mean number of photons absorbed
+
+    psf: the pointspread function, an instance of our Pointspread_Function class
+
+    photoreceptors: list of (x, y) pairs specifying the centers of the photoreceptors in our
+    lattice, as returned by our get_photoreceptor_locations function
+
+    lum: float, the luminance of the light we're showing the subject.
+
+    all other parameters are constants taken from the Geisler paper.
     """
-    rec_lattice, _, _, x, y = construct_photoreceptor_lattice(minutes_to_n_receptors(8.5))
-    psf = pointspread_function(x, y)
-    ret_im_a = retinal_image(lum_a, psf)
-    ret_im_b = retinal_image(lum_b, psf)
-    absorbed_a = mean_photons_absorbed(ret_im_a, rec_lattice)
-    absorbed_b = mean_photons_absorbed(ret_im_b, rec_lattice)
-    return (calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b),
-            calc_deltaN(absorbed_a, absorbed_b))
-
-
-def optimize_intensity_discrimination_task(lum_a, d_prime_target=1.36):
-    bounds = [(lum_a, np.inf)]
-    def obj_func(lum_b):
-        return np.square(intensity_discrimination_task(lum_a, lum_b)[0] - d_prime_target)
-    return optimize.minimize(obj_func, lum_a+.01, bounds=bounds)
-
-def mean_photons_absorbed_gauss(psf, photoreceptors, lum, a=.28, d=.2, s=3.1416, t=.68, e555=.5):
     return a*d*s*t*e555*347.8*lum * psf.pdf(photoreceptors[:, 0], photoreceptors[:, 1])
 
-def intensity_discr_task_gauss(lum_a, lum_b, lattice_x=4.25, lattice_y=4.25, psf=None, debug=False):
-    """run the intensity discrimination task with gaussians (rather than discrete photoreceptor lattice to be sampled)
-    lum_a, lum_b are luminances of the two different stimuli
-    lattice_x, lattice_y are in arcminutes
-    debug is a boolean; if true, return more stuff
+
+def intensity_discrimination_task(lum_a, lum_b, lattice_x=4.25, lattice_y=4.25, psf=None,
+                                  debug=False):
+    """run the intensity discrimination task
+
+    Given the luminance of two stimuli at the same location, return the d_prime and N for the ideal
+    observer
+
+    lum_a, lum_b: floats, luminances of the two different stimuli
+
+    lattice_x, lattice_y: floats, distance in each direction to go from 0 (in arcminutes). the
+    receptor lattice will therefore run from -x_minutes to x_minutes in the horizontal direction
+    and -y_minutes to y_minutes in the vertical direction
+
+    psf: instance of our Pointspread_Function class, optional. If not specified, will create the
+    default one. The same pointspread function is used for both a and b. You should specify it if
+    you are optimizing this function, because initializing the psf can take some time.
+
+    debug: boolean. if True, also returns the photoreceptors coordinates and the lists showing the
+    amount absorbed in tasks a and b at each of those locations
     """
-    if psf is None: # otherwise, we've passed in the PSF
-        psf = Pointspread_Function((0, 0)); # same PSF for both stimuli
-    photoreceptors = get_photoreceptor_locations(lattice_x, lattice_y);
-    absorbed_a = mean_photons_absorbed_gauss(psf, photoreceptors, lum_a)
-    absorbed_b = mean_photons_absorbed_gauss(psf, photoreceptors, lum_b)
+    if psf is None:
+        psf = Pointspread_Function((0, 0))
+    photoreceptors = get_photoreceptor_locations(lattice_x, lattice_y)
+    absorbed_a = mean_photons_absorbed(psf, photoreceptors, lum_a)
+    absorbed_b = mean_photons_absorbed(psf, photoreceptors, lum_b)
     to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b)]
     if debug:
         to_return.extend([photoreceptors, absorbed_a, absorbed_b])
     return to_return
 
-def optimize_intensity_discr_task_gauss(lum_a, d_prime_target=1.36):
-    """Optimize for the luminance of the second stimulus whose discriminability from a stimulus
-    of luminance a is d' equal to d_prime_target.
 
-    This is the gaussian version (i.e. using OurGauss class)
+def optimize_intensity_discrimination_task(lum_a, d_prime_target=1.36):
+    """Optimize the intensity discrimination task.
+
+    Given the luminance of one stimulus (lum_a) and the specified d prime value (d_prime_target),
+    we optimize to find the luminance of the second stimulus.
+
+    lum_a: float. The luminance of the first stimulus
     """
-    bounds_lum = [(lum_a, np.inf)]; # lum_b > lum_a
-    psf_all = Pointspread_Function((0, 0)); # center at (0, 0)
+    # We know that lum_b is always greater than lum_a
+    bounds_lum = [(lum_a, np.inf)]
+    # the psf center is  at (0, 0)
+    psf_all = Pointspread_Function((0, 0))
+
+    # the way optimize.minimize works, we optimize a single function, so this wrapper accomplishes
+    # that
     def obj_func(lum_b):
-        return np.square(intensity_discr_task_gauss(lum_a, lum_b, psf=psf_all)[0] - d_prime_target);
-    return optimize.minimize(obj_func, lum_a+0.01, bounds=bounds_lum);
+        return np.square(intensity_discrimination_task(lum_a, lum_b, psf=psf_all)[0]
+                         - d_prime_target)
+
+    return optimize.minimize(obj_func, lum_a+0.01, bounds=bounds_lum)
+
 
 def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     """recreate figure 4
 
-    d_prime=1.15 seems to get the best match to the Banks data.
+    This does not match the figure in the Geisler paper exactly for some reason; we have a small
+    shift.
     """
     solts = []
     for a in lum_a:
-        solt = optimize_intensity_discr_task_gauss(a, d_prime)
-        #solt = optimize_intensity_discrimination_task(a, d_prime)
+        solt = optimize_intensity_discrimination_task(a, d_prime)
+        # solt = optimize_intensity_discrimination_task(a, d_prime)
         solts.append(intensity_discrimination_task(a, solt.x))
     plot_solts = np.log10(np.array(solts)[:, 1:])
     plt.plot(plot_solts[:, 0], plot_solts[:, 1], label='Our solution', zorder=3)
@@ -486,48 +302,67 @@ def figure4(lum_a=[.2, .5, .75, 1, 2, 3, 4, 5, 6, 10, 15, 20], d_prime=1.36):
     plt.title('INTENSITY DISCRIMINATION')
     return solts
 
-def resolution_task(deltaTheta, lum=4, norm_samp=101, debug=False):
+def resolution_task(deltaTheta, lum=4, debug=False):
     """run the resolution task
 
-    returns the d-prime, and N (average photons absorbed)
+    In this task, the ideal observer is trying to differentiate between one stimulus of luminance
+    `lum` at the center of its receptor lattice and two stimuli with half that luminance thta are
+    separated by `deltaTheta` (and therefore lie `deltaTheta/2` from the center of the receptor
+    lattice).
 
-    if debug=True, also returns photoreceptor locs, absorbed_a, absorbed_b
+    returns the d-prime and N (average photons absorbed).
 
-    deltaTheta: in units of arc-minutes
+    deltaTheta: float. Space between in units of arc-minutes
 
-    debug: boolean. If True, also returns the retinal image for a and b, the receptor lattice, and
-    the coordinate matrices x and y.
+    lum: float. Luminance of the first stimulus.
+
+    debug: boolean. if True, also returns the photoreceptors coordinates and the lists showing
+    the amount absorbed in tasks a and b at each of those locations.
     """
     single_psf = Pointspread_Function((0, 0), norm_sampling=norm_samp)
     double_psf_1 = Pointspread_Function((-deltaTheta/2., 0), norm_sampling=norm_samp)
     double_psf_2 = Pointspread_Function((deltaTheta/2., 0), norm_sampling=norm_samp)
     photoreceptors = get_photoreceptor_locations(np.maximum(4.25, deltaTheta),
                                                  np.maximum(4.25, deltaTheta))
-    absorbed_a = mean_photons_absorbed_gauss(single_psf, photoreceptors, lum)
-    absorbed_b = (mean_photons_absorbed_gauss(double_psf_1, photoreceptors, lum/2.) +
-                  mean_photons_absorbed_gauss(double_psf_2, photoreceptors, lum/2.))
+    absorbed_a = mean_photons_absorbed(single_psf, photoreceptors, lum)
+    absorbed_b = (mean_photons_absorbed(double_psf_1, photoreceptors, lum/2.) +
+                  mean_photons_absorbed(double_psf_2, photoreceptors, lum/2.))
     to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b)]
     if debug:
         to_return.extend([photoreceptors, absorbed_a, absorbed_b])
     return to_return
 
 
-def optimize_resolution_task(lum, d_prime_target=1.36, norm_sampling=101):
-    """optimize resolution task.
+def optimize_resolution_task(lum, d_prime_target=1.36):
+    """optimize the resolution task.
 
-    this uses a custom loop because we have a discrete, convex function
-
-    init_deltaTheta is in units of pixels
-
-    returns deltaTheta in units of arc-minutes
+    Given the luminance of the first stimulus and the specified d-prime value (d_prime_target), we
+    optimize the find the separation between the two stimuli (deltaTheta).
     """
+    # this is just a guess, but it seems to work fine.
     bounds = [(.01, np.inf)]
+
     def obj_func(deltaTheta):
-        return np.square(resolution_task(deltaTheta, lum, norm_sampling)[0] - d_prime_target)
+        return np.square(resolution_task(deltaTheta, lum)[0] - d_prime_target)
+
+    # this initial guess seems to be approximately correct
     return optimize.minimize(obj_func, 10/(lum/.01), bounds=bounds)
 
 
-def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, norm_sampling=101):
+def figure5(lum=[.01, .05, .1, .5, 1, 5, 10, 15, 20], d_prime=1.36, scale_factor=0):
+    """recreate figure 5
+
+    there are several differences between this and the figure in the Geisler paper:
+
+    1. We only attempt to recreate one line, the one with no blurring of the point source (the
+    bottom line in figure 5, the one labeled with "0.0")
+
+    2. At very low logN (corresponding to low values of lum), our line is no longer
+    straight. Unclear why this happens.
+
+    3. The part of our line that is straight is parallel to the corresponding line in Geisler's
+    figure, but does not have the same values.
+    """
     solts = []
     for l in lum:
         solt = optimize_resolution_task(l, d_prime, norm_sampling)
