@@ -8,7 +8,7 @@ function rootPath = banksRootPath()
 % Example:
 %   fullfile(banksRootPath,'scripts')
 
-rootPath=which('fmsRootPath');
+rootPath=which('banksRootPath');
 
 rootPath=fileparts(rootPath);
 
