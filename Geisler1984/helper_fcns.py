@@ -259,7 +259,7 @@ def intensity_discrimination_task(lum_a, lum_b, lattice_x=4.25, lattice_y=4.25, 
     photoreceptors = get_photoreceptor_locations(lattice_x, lattice_y)
     absorbed_a = mean_photons_absorbed(psf, photoreceptors, lum_a)
     absorbed_b = mean_photons_absorbed(psf, photoreceptors, lum_b)
-    to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b)]
+    to_return = [calc_d_prime(absorbed_a, absorbed_b), calc_N(absorbed_a, absorbed_b), calc_deltaN(absorbed_a, absorbed_b)]
     if debug:
         to_return.extend([photoreceptors, absorbed_a, absorbed_b])
     return to_return
