@@ -346,7 +346,7 @@ def resolution_task(deltaTheta, lum=4, norm_sampling=101, debug=False):
     return to_return
 
 
-def optimize_resolution_task(lum, d_prime_target=1.36):
+def optimize_resolution_task(lum, d_prime_target=1.36, norm_sampling=101):
     """optimize the resolution task.
 
     Given the luminance of the first stimulus and the specified d-prime value (d_prime_target), we
@@ -356,7 +356,7 @@ def optimize_resolution_task(lum, d_prime_target=1.36):
     bounds = [(.01, np.inf)]
 
     def obj_func(deltaTheta):
-        return np.square(resolution_task(deltaTheta, lum)[0] - d_prime_target)
+        return np.square(resolution_task(deltaTheta, lum, norm_sampling)[0] - d_prime_target)
 
     # this initial guess seems to be approximately correct
     return optimize.minimize(obj_func, 10/(lum/.01), bounds=bounds)
