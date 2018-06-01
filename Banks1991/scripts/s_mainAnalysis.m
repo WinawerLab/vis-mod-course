@@ -60,7 +60,7 @@ verbose = false;
 deg2m    = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
 
 whichObserver = 'ideal'; % choose from 'ideal' or 'human'
-segment       = 'inner'; % choose from 'inner' or 'outer' cone segment
+segment       = 'outer'; % choose from 'inner' or 'outer' cone segment
 saveResults   = true;
 %% 1. Specify experiment parameters
 
@@ -70,10 +70,12 @@ expParams = loadExpParamsBanks1991;
 % Set a dummy contrast level to create stimulus test params
 thisContrast = expParams.contrastLevels(1);
 
+
 for thisEccen = 10;%expParams.eccen(:,1)'
     % thisEccen    = 10; % Choose from 0, 2, 5, 10, 20, 40
-     
-    for thisSpatFreq = [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8]; %expParams.sf(1,:)
+    
+    
+    for thisSpatFreq = expParams.sf(1,:)
         % thisSpatFreq = 0.25;  % Choose from [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8, 10, 16, 26]
         
         % Find the indices of corresponding target size
@@ -83,6 +85,7 @@ for thisEccen = 10;%expParams.eccen(:,1)'
         thisTargetSize = expParams.sd(idx(1),idx(2));
         
         if ~isnan(thisTargetSize)
+            fprintf('\nSimulating Banks 1991: %s observer, %s cone segment, at %d deg eccentricity, with %2.2f cpd spatial frequency\n', whichObserver, segment, thisEccen, thisSpatFreq)
             % Load stimulus params
             [tparams, sparams, tseries] = getStimulusParams(thisContrast, thisTargetSize, thisSpatFreq);
         
@@ -141,6 +144,26 @@ for thisEccen = 10;%expParams.eccen(:,1)'
 
             end
             
+        else
+            
+            % Create mock cone mosaic to fill in absorptions
+            [x, y] = pol2cart(expParams.polarangle, thisEccen);
+            x = x * deg2m;  y = y * deg2m;
+            
+            regMosaicParams = struct( ...
+                'eccentricity', thisEccen, ...
+                'polarAngle', expParams.polarangle, ... Right horizontal meridian
+                'cmFOV', 1);
+            
+            cMosaic = coneMosaic('center', [x, y], 'whichEye', expParams.whichEye);
+            
+            % Set the field of view (degrees)
+            cMosaic.setSizeToFOV(regMosaicParams.cmFOV);
+            
+            alphaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:21) = ...
+                        NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, 21);
+            betaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:21) = ...
+                        NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, 21);
         end
     end
 end
@@ -155,7 +178,7 @@ dPrime = dPrimeFunction;
 
 thisdPrime = [];
 for c = 1:length(expParams.contrastLevels)
-    for sf=1:9
+    for sf=1:size(alphaAbsorptions,2)
 
         this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
         this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
