@@ -86,13 +86,13 @@ for s = [1,2]
         plot(expParams.sf(1,:),squeeze(sensitivity(s,ec,:)), 'LineWidth',2);        
     end
     
-    set(gca,'XScale','log'); xlim([.1 100]); ylim([.1 1000]);
+    set(gca,'XScale','log'); xlim([.1 100]); ylim([.1 200]);
     xlabel('Spatial frequency (cpd)')
     ylabel('Contrast Sensitivity')
     set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'}, 'TickDir', 'out')
     set(gca, 'YTick', [0.1, 1, 10, 100, 1000], 'YTickLabel', {'0.1','1', '10', '100', '1000'}, 'TickDir', 'out')
     
-    title(allSegments{s})
+    title([allSegments{s} ' segment aperture'])
     box off;
     legend(labelEccen)
     
