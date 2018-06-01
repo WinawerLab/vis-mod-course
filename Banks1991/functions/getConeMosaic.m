@@ -26,7 +26,7 @@ function cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whic
 
     % There are no eyemovements, but I think you need to have emPaths defined in
     % order to get time varying absorption rates (because it's an oisSequence)
-    cMosaic.emGenSequence(ois(1).length, 'nTrials', 1);    
+%     cMosaic.emGenSequence(ois(1).length, 'nTrials', 1);    
     cMosaic.emPositions = zeros(1,ois(1).length,2);
 
     % implement th inner segment aperture to correct for proportion covered
