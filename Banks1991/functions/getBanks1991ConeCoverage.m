@@ -89,7 +89,7 @@ if p.Results.verbose
         'XScale', 'linear', 'XLim', [0 50], 'YLim', [0.01 1], 'TickDir', 'out');
     hold all; scatter(banksEccen, banksData, 80','k');
     xlabel('Eccentricity (deg)'); ylabel('Normalized proportion absorpted');
-    title('Proportion absorpted as a function of eccentricity, using inner or outer cone segment')
+    title(sprintf('Proportion absorpted as a function of eccentricity, using %s segment', p.Results.coneSegment))
     box off
 end
 
