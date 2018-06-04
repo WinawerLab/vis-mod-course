@@ -8,6 +8,7 @@ expParams.sd          = sd;
 expParams.sf          = sf;
 expParams.eccen       = eccen;
 expParams.cycleLength = cycleLength;
+expParams.duration    = 0.20; % seconds
 
 % General parameters
 expParams.nTrials           = 1;                            % Number of trials per stimulus condition
