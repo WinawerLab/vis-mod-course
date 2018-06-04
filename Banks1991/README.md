@@ -28,7 +28,7 @@ to add ISETBio and this code repository to your paths.
 ## Future to do’s:
 - Look into differences ISETBio and Geisler computation of cone absorptions
 - What target sizes are used for the stimuli at spatial frequencies and eccentricities not reported in table 1?
-- Why is the ideal observer worse at the vary small spatial frequencies, compared to intermediate spatial frequencies?
+- Why is the ideal observer worse at the lowest spatial frequencies, compared to intermediate spatial frequencies?
 - Implement retinal ganglion cell layer
 - Implement option to simulate human observer results (computational observer model, add photon noise, human optics, etc)
 
