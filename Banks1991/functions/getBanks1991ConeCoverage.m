@@ -84,10 +84,13 @@ end
     
 % Plot for debugging
 if p.Results.verbose
-    figure(1); clf,
+    figure(101); clf; set(gcf, 'Color','w')
     plot(allEccentricities, coverage, 'o-'); set(gca, 'YScale', 'log', ...
-        'XScale', 'linear', 'XLim', [0 50], 'YLim', [0.01 1]);
+        'XScale', 'linear', 'XLim', [0 50], 'YLim', [0.01 1], 'TickDir', 'out');
     hold all; scatter(banksEccen, banksData, 80','k');
+    xlabel('Eccentricity (deg)'); ylabel('Normalized proportion absorpted');
+    title('Proportion absorpted as a function of eccentricity, using inner or outer cone segment')
+    box off
 end
 
 idx = (eccDeg == allEccentricities);
