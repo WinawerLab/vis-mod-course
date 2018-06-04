@@ -22,7 +22,6 @@ to add ISETBio and this code repository to your paths.
 - results			: folder to save results (d prime, per eccentricity, per cone segment), 
 				  content will be ignored by .gitignore
 - scripts 			: folder containing the two main scripts (and html code for published scripts):
-					
 					`s_mainAnalysis`
 					`s_visualizeResults`		  	
 
