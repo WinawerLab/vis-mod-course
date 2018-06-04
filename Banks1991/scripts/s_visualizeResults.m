@@ -36,6 +36,8 @@
 
 % Define path where results are
 resultsDir = fullfile(banksRootPath, 'results');
+figureDir = fullfile(banksRootPath, 'figures');
+saveFigures = true;
 
 % General parameters
 whichObserver = 'ideal';
@@ -73,7 +75,7 @@ for ii = 1:12, labelSF{ii} = sprintf('%1.2f',expParams.sf(1,ii)); end
 cmap = jet(size(expParams.sf,2));
 
 % Get all data
-allData = {r_inner};%,r_outer};
+allData = {r_inner,r_outer};
 
 % Preallocate space for contrast sensitivity
 sensitivity = NaN(2,length(expParams.eccen(:,1)), length(expParams.sf(1,:)));
@@ -82,7 +84,7 @@ sensitivity = NaN(2,length(expParams.eccen(:,1)), length(expParams.sf(1,:)));
 for s = [1,2]
     
     % Create a figure
-    figure(s); set(gcf, 'Color', 'w'); clf;
+    figure(s); set(gcf, 'Color', 'w', 'Position', [28, 148, 1072, 1193]); clf;
     
     % Select d-prime data
     dprime = allData{s};
@@ -115,7 +117,11 @@ for s = [1,2]
         title(sprintf('%s: eccen %d', allSegments{s}, expParams.eccen(ec,1)))
     end
     
+    if saveFigures
+        print(fullfile(figureDir, sprintf('Fig3_dPrime_%s_%s', whichObserver,  allSegments{s})),'-dpng');
+    end
 end
+
 
 
 %% 2. PLOT CONTRAST SENSITIVITY as a function of SPATIAL FREQUENCY (Fig 5)
@@ -133,7 +139,7 @@ faceColors(4,:) = [1 1 1];
 faceColors(6,:) = [1 1 1];
 
 % Set up figure
-figure(3); clf; set(gcf, 'Color', 'w');
+figure(3); clf; set(gcf, 'Color', 'w', 'Position', [62, 611, 1217, 734]);
 
 % For each cone segment
 for s = [1,2]
@@ -163,6 +169,8 @@ for s = [1,2]
     
 end
 
-
+if saveFigures
+    print(fullfile(figureDir, sprintf('Fig5_SpatFreqLimits_%s', whichObserver)),'-dpng');
+end
 
 
