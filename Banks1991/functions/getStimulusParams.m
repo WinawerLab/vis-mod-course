@@ -1,4 +1,4 @@
-function [tparams, sparams, tseries] = getStimulusParams(thisContrast, targetSize, spatFreq)
+function [tparams, tseries] = getStimulusParams(thisContrast, targetSize, spatFreq)
 
 % Function to create test and scene params to create Optical Image
 % Sequences (OIS) later
@@ -13,10 +13,7 @@ tStep            = 0.01;                % Time step for optical image sequence (
 tSamples         = (0:tStep:0.20);      % seconds
 % timesd           = .01;               % sd of temporal Gaussian window
 
-% Scene field of view
-sparams.fov       = 1;   % scene field of view in degrees (diameter)
-fov2deg           = 1/sparams.fov;
-sparams.distance  = 0.57;  % meters
+[~, fov2deg] = getSceneParams();
 
 % Gabor parameters
 tparams{1}(1)           = harmonicP;           % Function to get standard Gabor
