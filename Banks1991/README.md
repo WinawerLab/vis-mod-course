@@ -7,9 +7,9 @@ One can run the main analysis script to get results and run visualize results to
 
 This repository is Matlab based and uses the ISETBio toolbox (https://github.com/isetbio/isetbio).
 
-There is a ToolboxToolbox registration file in the forked Winawer lab ToolboxRegistry called 'VisualModelingGradCourse'. If you use the ToolboxToolbox (https://github.com/ToolboxHub/ToolboxToolbox), you can type 
+There is a ToolboxToolbox registration file in the forked Winawerlab ToolboxRegistry (https://github.com/WinawerLab/ToolboxRegistry) called 'VisualModelingGradCourse'. If you use the ToolboxToolbox (https://github.com/ToolboxHub/ToolboxToolbox), you can type 
 `tbUse('VisualModelingGradCourse')`
-to add this repository to your paths.
+to add ISETBio and this code repository to your paths.
 
 
 
@@ -26,7 +26,7 @@ to add this repository to your paths.
 					`s_visualizeResults`		  	
 
 ## To do’s:
-- Look into differences ISETBIO and Geisler computation of cone absorptions
+- Look into differences ISETBio and Geisler computation of cone absorptions
 - What target sizes are used for the stimuli at spatial frequencies and eccentricities not reported in table 1?
 - Why is the ideal observer worse at the vary small spatial frequencies, compared to intermediate spatial frequencies?
 - Implement retinal ganglion cell layer
