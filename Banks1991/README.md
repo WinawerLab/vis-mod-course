@@ -2,14 +2,18 @@
 
 This is the read me text file for the **Banks1991** folder, within the winawerlab/vis-mod-course github repository (https://github.com/WinawerLab/vis-mod-course/tree/master/Banks1991).
 
-This repository is Matlab based and uses the ISETBio toolbox (https://github.com/isetbio/isetbio).
-
-There is a ToolboxToolbox registration file in the forked Winawer lab ToolboxRegistry called 'VisualModelingGradCourse'. If you use the ToolboxToolbox (https://github.com/ToolboxHub/ToolboxToolbox), you can type tbUse('VisualModelingGradCourse') to add this repository to your paths.
-
 Code in this folder makes an attempt to reproduce spatial frequency limits as a function of eccentricity, for an ideal observer model (Figure 3 and 5) from the Banks et al. (1991) paper.
 
 Results can be obtained by running the script: s_mainAnalysis.m
-Figure 3 and 5 can be obtained by running the script: s_visualizeResults.m
+**Figure 3 and 5** can be obtained by running the script: s_visualizeResults.m
+
+This repository is Matlab based and uses the ISETBio toolbox (https://github.com/isetbio/isetbio).
+
+There is a ToolboxToolbox registration file in the forked Winawer lab ToolboxRegistry called 'VisualModelingGradCourse'. If you use the ToolboxToolbox (https://github.com/ToolboxHub/ToolboxToolbox), you can type 
+`tbUse('VisualModelingGradCourse')`
+to add this repository to your paths.
+
+
 
 
 ## Folder structure:
@@ -21,10 +25,8 @@ Figure 3 and 5 can be obtained by running the script: s_visualizeResults.m
 				  content will be ignored by .gitignore
 - scripts 			: folder containing the two main scripts (and html code for published scripts):
 					
-					```
 					s_mainAnalysis
-				  	s_visualizeResults
-				  	```
+				  	s_visualizeResults			  	
 
 ## To do’s:
 - Look into differences ISETBIO and Geisler computation of cone absorptions
@@ -33,7 +35,7 @@ Figure 3 and 5 can be obtained by running the script: s_visualizeResults.m
 - Implement retinal ganglion cell layer
 - Implement option to simulate human observer results (computational observer model, add photon noise, human optics, etc)
 
-### Full citation:
+## Full citation:
 Peripheral spatial vision: limits imposed by optics, photoreceptors, and
 receptor pooling. (1991) Banks, M.S., Sekuler, S.B., & Anderson, S.J.
 Journal of the Optical Society of America Association (JOSAA). Vol 8, No 11, 1775-1787.
