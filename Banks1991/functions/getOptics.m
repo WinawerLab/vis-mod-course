@@ -22,22 +22,22 @@ end
 if verbose
     
     % Plot ocular transmittance function
-    figure; plot(oi.optics.lens.wave, oi.optics.lens.transmittance)
-    title('Ocular transmittance function')
+    figure; plot(oi.optics.lens.wave, oi.optics.lens.transmittance);
+    title('Ocular transmittance function');
     
     % Request pupil diameter
     p = opticsGet(oi.optics,'pupil diameter','mm');
     
     if verbose
         % Plot OTF
-        oiPlot(oi, 'OTF', 'wavelength', 550)
+        oiPlot(oi, 'OTF', 'wavelength', 550);
         
         % Plot Point spread function
-        oiPlot(oi, 'PSF', 'wavelength', 550)
+        oiPlot(oi, 'PSF', 'wavelength', 550);
         
         % Plot line spread function for multiple wave lengths
         oiPlot(oi,'ls wavelength');
-        title(sprintf('F/# = %.0d',opticsGet(oi.optics,'f number')))
+        title(sprintf('F/# = %.0d',opticsGet(oi.optics,'f number')));
     end
     
 end
