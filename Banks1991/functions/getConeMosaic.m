@@ -1,4 +1,4 @@
-function cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whichObserver, segment, verbose)
+function cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, whichObserver, segment, verbose)
 
   % Compute x,y position in m of center of retinal patch from ecc and angle
     [x, y] = pol2cart(expParams.polarangle, thisEccen);
@@ -22,14 +22,12 @@ function cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, ois, whic
     end
 
     % Not sure why these have to match, but there is a bug if they don't.
-    cMosaic.integrationTime = ois(1).timeStep;
+    cMosaic.integrationTime = 0.001; %ois(1).timeStep;
 
-    % There are no eyemovements, but I think you need to have emPaths defined in
-    % order to get time varying absorption rates (because it's an oisSequence)
-%     cMosaic.emGenSequence(ois(1).length, 'nTrials', 1);    
-    cMosaic.emPositions = zeros(1,ois(1).length,2);
+%     maxEyeMovementsNum = cMosaic.maxEyeMovementsNumGivenIntegrationTime(cMosaic.integrationTime);  
+    cMosaic.emPositions = zeros(1,(expParams.duration*100)+1,2);
 
-    % implement th inner segment aperture to correct for proportion covered
+    % Implement the inner/outer segment aperture to correct for proportion covered
     propCovered = getBanks1991ConeCoverage(thisEccen, 'coneSegment', segment, 'verbose', verbose);
 
     cMosaic.pigment.pdWidth  = cMosaic.pigment.width*propCovered;
