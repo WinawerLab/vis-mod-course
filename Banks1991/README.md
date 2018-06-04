@@ -3,9 +3,7 @@
 This is the read me text file for the **Banks1991** folder, within the winawerlab/vis-mod-course github repository (https://github.com/WinawerLab/vis-mod-course/tree/master/Banks1991).
 
 Code in this folder makes an attempt to reproduce spatial frequency limits as a function of eccentricity, for an ideal observer model (Figure 3 and 5) from the Banks et al. (1991) paper.
-
-Results can be obtained by running the script: s_mainAnalysis.m
-**Figure 3 and 5** can be obtained by running the script: s_visualizeResults.m
+One can run the main analysis script to get results and run visualize results to plot figures.
 
 This repository is Matlab based and uses the ISETBio toolbox (https://github.com/isetbio/isetbio).
 
@@ -24,9 +22,8 @@ to add this repository to your paths.
 - results			: folder to save results (d prime, per eccentricity, per cone segment), 
 				  content will be ignored by .gitignore
 - scripts 			: folder containing the two main scripts (and html code for published scripts):
-					
-					s_mainAnalysis
-				  	s_visualizeResults			  	
+					`s_mainAnalysis`
+					`s_visualizeResults`		  	
 
 ## To do’s:
 - Look into differences ISETBIO and Geisler computation of cone absorptions
