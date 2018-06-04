@@ -1,7 +1,5 @@
 # gitignore file
 .DS_Store
 *mat
-figures/*
-results/*
 *.m~
 
