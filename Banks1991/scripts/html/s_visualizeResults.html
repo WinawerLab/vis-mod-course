@@ -1,0 +1,406 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>s_visualizeResults</title><meta name="generator" content="MATLAB 9.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-06-04"><meta name="DC.source" content="s_visualizeResults.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">s_visualizeResults.m</a></li><li><a href="#2">0. GENERAL AND EXPERIMENT PARAMETERS</a></li><li><a href="#3">1. PLOT CONTRAST LEVELS as a function of ECCENTRICITY and CONE SEGMENT (Fig 3)</a></li><li><a href="#4">2. PLOT CONTRAST SENSITIVITY as a function of SPATIAL FREQUENCY (Fig 5)</a></li></ul></div><h2 id="1">s_visualizeResults.m</h2><pre class="codeinput"><span class="comment">% Script to visualize Figure 3 and 5 (contrast sensitivity functions for</span>
+<span class="comment">% different spatial frequencies and eccentricities for ideal observer)</span>
+<span class="comment">% from the published article by Banks et al. (1991).</span>
+
+<span class="comment">% Full citation:</span>
+<span class="comment">% Peripheral spatial vision: limits imposed by optics, photoreceptors, and</span>
+<span class="comment">% receptor pooling. (1991) Banks, M.S., Sekuler, S.B., &amp; Anderson, S.J.</span>
+<span class="comment">% Journal of the Optical Society of America A (JOSAA). Vol 8, No 11,</span>
+<span class="comment">% 1775-1787.</span>
+
+<span class="comment">% DESCRIPTION:</span>
+<span class="comment">% This script recompute Figure 3 and 5 as follows:</span>
+<span class="comment">%   0. Set up general parameters and experimental parameters:</span>
+<span class="comment">%       - Path where results live (computed by s_mainAnalysis.m)</span>
+<span class="comment">%       - Load stimulus parameters, like size, spatial frequency,</span>
+<span class="comment">%       eccentricity</span>
+<span class="comment">%   1. Plot d-prime against stimulus contrast, for every spatial frequency,</span>
+<span class="comment">%      for every eccentricity (0, 2, 5, 10, 20 degrees).</span>
+<span class="comment">%   2. Get contrast threshold for each spatial frequency, for each</span>
+<span class="comment">%      eccentricity. Plot the threshold's against spatial frequency.</span>
+
+
+<span class="comment">% To get results use s_mainAnalysis.m (This script requires ISETBio)</span>
+
+<span class="comment">% DEPENDENCIES:</span>
+<span class="comment">%   Results computed by s_mainAnalysis.m</span>
+
+<span class="comment">% AUTHOR:</span>
+<span class="comment">%   Eline Kupers, 2018, NYU</span>
+</pre><h2 id="2">0. GENERAL AND EXPERIMENT PARAMETERS</h2><pre class="codeinput"><span class="comment">% Define path where results are</span>
+resultsDir = fullfile(banksRootPath, <span class="string">'results'</span>);
+figureDir = fullfile(banksRootPath, <span class="string">'figures'</span>);
+saveFigures = true;
+
+<span class="comment">% General parameters</span>
+whichObserver = <span class="string">'ideal'</span>;
+allSegments = {<span class="string">'inner'</span>,<span class="string">'outer'</span>};
+
+<span class="comment">% Load experiment parameters</span>
+expParams = loadExpParamsBanks1991;
+
+<span class="comment">% Preallocate space for dPrime</span>
+r_inner = cell(length(expParams.eccen(:,1)),1);
+r_outer = r_inner;
+
+<span class="comment">% For every eccentricity..</span>
+<span class="keyword">for</span> ec = 1:length(expParams.eccen(:,1))
+
+    <span class="comment">% Load and store inner and outer segment results</span>
+    inner = load(fullfile(resultsDir, sprintf(<span class="string">'dPrime_%s_inner_eccen%d.mat'</span>, whichObserver, expParams.eccen(ec,1))));
+    outer = load(fullfile(resultsDir, sprintf(<span class="string">'dPrime_%s_outer_eccen%d.mat'</span>, whichObserver, expParams.eccen(ec,1))));
+    r_inner{ec} =  inner.thisdPrime;
+    r_outer{ec} =  outer.thisdPrime;
+
+<span class="keyword">end</span>
+</pre><h2 id="3">1. PLOT CONTRAST LEVELS as a function of ECCENTRICITY and CONE SEGMENT (Fig 3)</h2><pre class="codeinput"><span class="comment">% Ideal observer model threshold (Based on Geisler (1987))</span>
+threshold = 1.36/sqrt(2);
+
+<span class="comment">% Get labels</span>
+<span class="keyword">for</span> ii = 1:12, labelSF{ii} = sprintf(<span class="string">'%1.2f'</span>,expParams.sf(1,ii)); <span class="keyword">end</span>
+
+<span class="comment">% Get color map</span>
+cmap = jet(size(expParams.sf,2));
+
+<span class="comment">% Get all data</span>
+allData = {r_inner,r_outer};
+
+<span class="comment">% Preallocate space for contrast sensitivity</span>
+sensitivity = NaN(2,length(expParams.eccen(:,1)), length(expParams.sf(1,:)));
+
+<span class="comment">% For each cone segment..</span>
+<span class="keyword">for</span> s = [1,2]
+
+    <span class="comment">% Create a figure</span>
+    figure(s); set(gcf, <span class="string">'Color'</span>, <span class="string">'w'</span>, <span class="string">'Position'</span>, [28, 148, 1072, 1193]); clf;
+
+    <span class="comment">% Select d-prime data</span>
+    dprime = allData{s};
+
+    <span class="comment">% For every eccentricity</span>
+    <span class="keyword">for</span> ec = 1:length(expParams.eccen(:,1))
+
+        <span class="comment">% Check for NaNs</span>
+        idx = find(~isnan(expParams.sd(ec,:)'));
+
+        <span class="comment">% Plot stimulus contrast against d-prime</span>
+        subplot(3,2,ec); hold <span class="string">all</span>;
+        <span class="keyword">for</span> ii = idx'
+            plot(expParams.contrastLevels*100, dprime{ec}(:,ii), <span class="string">'Color'</span>, cmap(ii,:,:), <span class="string">'LineWidth'</span>,2)
+            [val_tresh, idx_thresh] = min(abs(dprime{ec}(:,ii) -threshold));
+            sensitivity(s, ec, ii) = 1./(expParams.contrastLevels(idx_thresh));
+        <span class="keyword">end</span>
+
+
+        <span class="comment">% Add labels &amp; make plot pretty</span>
+        plot([0.1 100], [threshold, threshold],<span class="string">'k--'</span>)
+        <span class="comment">% plot([0.1 100], [1.36, 1.36],'r--')</span>
+        xlim([0.1 100]); ylim([0.1 100]);
+        xlabel(<span class="string">'Stimulus contrast (%)'</span>)
+        ylabel(<span class="string">'Sensitivity (d-prime)'</span>); title(<span class="string">'Figure 3'</span>)
+        set(gca, <span class="string">'XScale'</span>, <span class="string">'log'</span>, <span class="string">'YScale'</span>, <span class="string">'log'</span>)
+        set(gca, <span class="string">'XTick'</span>, [0.1, 1, 10, 100], <span class="string">'XTickLabel'</span>, {<span class="string">'0.1'</span>, <span class="string">'1'</span>, <span class="string">'10'</span>, <span class="string">'100'</span>},<span class="string">'TickDir'</span>, <span class="string">'out'</span>, <span class="string">'FontSize'</span>, 20)
+        set(gca, <span class="string">'YTick'</span>, [0.1, 1, 10, 100], <span class="string">'YTickLabel'</span>, {<span class="string">'0.1'</span>, <span class="string">'1'</span>, <span class="string">'10'</span>, <span class="string">'100'</span>},<span class="string">'TickDir'</span>, <span class="string">'out'</span>, <span class="string">'FontSize'</span>, 20)
+        legend({labelSF{idx}, <span class="string">'threshold'</span>}, <span class="string">'FontSize'</span>, 10,<span class="string">'Location'</span>, <span class="string">'Best'</span>); legend <span class="string">boxoff</span>
+        title(sprintf(<span class="string">'%s: eccen %d'</span>, allSegments{s}, expParams.eccen(ec,1)))
+    <span class="keyword">end</span>
+
+    <span class="keyword">if</span> saveFigures
+        print(fullfile(figureDir, sprintf(<span class="string">'Fig3_dPrime_%s_%s'</span>, whichObserver,  allSegments{s})),<span class="string">'-dpng'</span>);
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="s_visualizeResults_01.png" alt=""> <img vspace="5" hspace="5" src="s_visualizeResults_02.png" alt=""> <h2 id="4">2. PLOT CONTRAST SENSITIVITY as a function of SPATIAL FREQUENCY (Fig 5)</h2><pre class="codeinput"><span class="comment">% Get labels</span>
+<span class="keyword">for</span> ii = 1:6, labelEccen{ii} = sprintf(<span class="string">'%d'</span>,expParams.eccen(ii,1)); <span class="keyword">end</span>
+
+<span class="comment">% Get markers</span>
+M = {<span class="string">'^'</span>, <span class="string">'o'</span>, <span class="string">'s'</span>, <span class="string">'s'</span>, <span class="string">'^'</span>, <span class="string">'o'</span>};
+
+edgeColors = jet(length(expParams.eccen(:,1)));
+faceColors = edgeColors;
+faceColors(1,:) = [1 1 1];
+faceColors(4,:) = [1 1 1];
+faceColors(6,:) = [1 1 1];
+
+<span class="comment">% Set up figure</span>
+figure(3); clf; set(gcf, <span class="string">'Color'</span>, <span class="string">'w'</span>, <span class="string">'Position'</span>, [62, 611, 1217, 734]);
+
+<span class="comment">% For each cone segment</span>
+<span class="keyword">for</span> s = [1,2]
+
+    <span class="comment">% Get a subplot</span>
+    subplot(1,2,s); hold <span class="string">all</span>;
+
+    <span class="comment">% For each eccentricity</span>
+    <span class="keyword">for</span> ec = 1:length(expParams.eccen(:,1))
+        plot(expParams.sf(1,:),squeeze(sensitivity(s,ec,:)), <span class="keyword">...</span>
+            <span class="string">'Color'</span>, [edgeColors(ec,:)], <span class="keyword">...</span>
+            <span class="string">'Marker'</span>, M{ec}, <span class="string">'MarkerSize'</span>, 20, <span class="keyword">...</span>
+            <span class="string">'MarkerEdgeColor'</span>, edgeColors(ec,:), <span class="keyword">...</span>
+            <span class="string">'MarkerFaceColor'</span>, faceColors(ec,:), <span class="keyword">...</span>
+            <span class="string">'LineWidth'</span>,2);
+    <span class="keyword">end</span>
+
+    <span class="comment">% Add labels &amp; make plot pretty</span>
+    set(gca,<span class="string">'XScale'</span>,<span class="string">'log'</span>); xlim([0.1 100]); ylim([1 1000]);
+    xlabel(<span class="string">'Spatial frequency (cpd)'</span>)
+    ylabel(<span class="string">'Contrast Sensitivity (%)'</span>)
+    set(gca, <span class="string">'XTick'</span>, [0.1, 1, 10, 100], <span class="string">'XTickLabel'</span>, {<span class="string">'0.1'</span>, <span class="string">'1'</span>, <span class="string">'10'</span>, <span class="string">'100'</span>}, <span class="string">'TickDir'</span>, <span class="string">'out'</span>, <span class="string">'FontSize'</span>, 20)
+    set(gca, <span class="string">'YTick'</span>, [1, 100, 1000], <span class="string">'YTickLabel'</span>, {<span class="string">'1'</span>, <span class="string">'100'</span>, <span class="string">'1000'</span>}, <span class="string">'TickDir'</span>, <span class="string">'out'</span>, <span class="string">'FontSize'</span>, 20)
+    title([allSegments{s} <span class="string">' segment aperture'</span>])
+    box <span class="string">off</span>;
+    legend(labelEccen, <span class="string">'FontSize'</span>,20, <span class="string">'Location'</span>, <span class="string">'Best'</span>); legend <span class="string">boxoff</span>
+
+<span class="keyword">end</span>
+
+<span class="keyword">if</span> saveFigures
+    print(fullfile(figureDir, sprintf(<span class="string">'Fig5_SpatFreqLimits_%s'</span>, whichObserver)),<span class="string">'-dpng'</span>);
+<span class="keyword">end</span>
+</pre><img vspace="5" hspace="5" src="s_visualizeResults_03.png" alt=""> <p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2016b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% s_visualizeResults.m
+
+% Script to visualize Figure 3 and 5 (contrast sensitivity functions for 
+% different spatial frequencies and eccentricities for ideal observer)
+% from the published article by Banks et al. (1991).
+
+% Full citation:
+% Peripheral spatial vision: limits imposed by optics, photoreceptors, and
+% receptor pooling. (1991) Banks, M.S., Sekuler, S.B., & Anderson, S.J.
+% Journal of the Optical Society of America A (JOSAA). Vol 8, No 11,
+% 1775-1787.
+
+% DESCRIPTION:
+% This script recompute Figure 3 and 5 as follows:
+%   0. Set up general parameters and experimental parameters:
+%       - Path where results live (computed by s_mainAnalysis.m)
+%       - Load stimulus parameters, like size, spatial frequency,
+%       eccentricity
+%   1. Plot d-prime against stimulus contrast, for every spatial frequency,
+%      for every eccentricity (0, 2, 5, 10, 20 degrees).
+%   2. Get contrast threshold for each spatial frequency, for each
+%      eccentricity. Plot the threshold's against spatial frequency.
+
+
+% To get results use s_mainAnalysis.m (This script requires ISETBio)
+
+% DEPENDENCIES:
+%   Results computed by s_mainAnalysis.m
+
+% AUTHOR:
+%   Eline Kupers, 2018, NYU
+
+
+
+%% 0. GENERAL AND EXPERIMENT PARAMETERS 
+
+% Define path where results are
+resultsDir = fullfile(banksRootPath, 'results');
+figureDir = fullfile(banksRootPath, 'figures');
+saveFigures = true;
+
+% General parameters
+whichObserver = 'ideal';
+allSegments = {'inner','outer'};
+
+% Load experiment parameters
+expParams = loadExpParamsBanks1991;
+
+% Preallocate space for dPrime
+r_inner = cell(length(expParams.eccen(:,1)),1);
+r_outer = r_inner;
+
+% For every eccentricity..
+for ec = 1:length(expParams.eccen(:,1))
+    
+    % Load and store inner and outer segment results
+    inner = load(fullfile(resultsDir, sprintf('dPrime_%s_inner_eccen%d.mat', whichObserver, expParams.eccen(ec,1))));
+    outer = load(fullfile(resultsDir, sprintf('dPrime_%s_outer_eccen%d.mat', whichObserver, expParams.eccen(ec,1))));
+    r_inner{ec} =  inner.thisdPrime;
+    r_outer{ec} =  outer.thisdPrime;
+    
+end
+
+
+
+%% 1. PLOT CONTRAST LEVELS as a function of ECCENTRICITY and CONE SEGMENT (Fig 3)
+
+% Ideal observer model threshold (Based on Geisler (1987))
+threshold = 1.36/sqrt(2);
+
+% Get labels 
+for ii = 1:12, labelSF{ii} = sprintf('%1.2f',expParams.sf(1,ii)); end
+
+% Get color map
+cmap = jet(size(expParams.sf,2));
+
+% Get all data
+allData = {r_inner,r_outer};
+
+% Preallocate space for contrast sensitivity
+sensitivity = NaN(2,length(expParams.eccen(:,1)), length(expParams.sf(1,:)));
+
+% For each cone segment..
+for s = [1,2]
+    
+    % Create a figure
+    figure(s); set(gcf, 'Color', 'w', 'Position', [28, 148, 1072, 1193]); clf;
+    
+    % Select d-prime data
+    dprime = allData{s};
+    
+    % For every eccentricity
+    for ec = 1:length(expParams.eccen(:,1))
+        
+        % Check for NaNs
+        idx = find(~isnan(expParams.sd(ec,:)'));
+        
+        % Plot stimulus contrast against d-prime
+        subplot(3,2,ec); hold all;
+        for ii = idx'
+            plot(expParams.contrastLevels*100, dprime{ec}(:,ii), 'Color', cmap(ii,:,:), 'LineWidth',2)
+            [val_tresh, idx_thresh] = min(abs(dprime{ec}(:,ii) -threshold));
+            sensitivity(s, ec, ii) = 1./(expParams.contrastLevels(idx_thresh));
+        end
+        
+        
+        % Add labels & make plot pretty
+        plot([0.1 100], [threshold, threshold],'kREPLACE_WITH_DASH_DASH')
+        % plot([0.1 100], [1.36, 1.36],'rREPLACE_WITH_DASH_DASH')
+        xlim([0.1 100]); ylim([0.1 100]);
+        xlabel('Stimulus contrast (%)')
+        ylabel('Sensitivity (d-prime)'); title('Figure 3')
+        set(gca, 'XScale', 'log', 'YScale', 'log')
+        set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'},'TickDir', 'out', 'FontSize', 20)
+        set(gca, 'YTick', [0.1, 1, 10, 100], 'YTickLabel', {'0.1', '1', '10', '100'},'TickDir', 'out', 'FontSize', 20)
+        legend({labelSF{idx}, 'threshold'}, 'FontSize', 10,'Location', 'Best'); legend boxoff
+        title(sprintf('%s: eccen %d', allSegments{s}, expParams.eccen(ec,1)))
+    end
+    
+    if saveFigures
+        print(fullfile(figureDir, sprintf('Fig3_dPrime_%s_%s', whichObserver,  allSegments{s})),'-dpng');
+    end
+end
+
+
+
+%% 2. PLOT CONTRAST SENSITIVITY as a function of SPATIAL FREQUENCY (Fig 5)
+
+% Get labels
+for ii = 1:6, labelEccen{ii} = sprintf('%d',expParams.eccen(ii,1)); end
+
+% Get markers
+M = {'^', 'o', 's', 's', '^', 'o'};
+
+edgeColors = jet(length(expParams.eccen(:,1)));
+faceColors = edgeColors;
+faceColors(1,:) = [1 1 1];
+faceColors(4,:) = [1 1 1];
+faceColors(6,:) = [1 1 1];
+
+% Set up figure
+figure(3); clf; set(gcf, 'Color', 'w', 'Position', [62, 611, 1217, 734]);
+
+% For each cone segment
+for s = [1,2]
+    
+    % Get a subplot
+    subplot(1,2,s); hold all;
+    
+    % For each eccentricity
+    for ec = 1:length(expParams.eccen(:,1))        
+        plot(expParams.sf(1,:),squeeze(sensitivity(s,ec,:)), ...
+            'Color', [edgeColors(ec,:)], ...
+            'Marker', M{ec}, 'MarkerSize', 20, ...
+            'MarkerEdgeColor', edgeColors(ec,:), ... 
+            'MarkerFaceColor', faceColors(ec,:), ...
+            'LineWidth',2);        
+    end
+    
+    % Add labels & make plot pretty
+    set(gca,'XScale','log'); xlim([0.1 100]); ylim([1 1000]);
+    xlabel('Spatial frequency (cpd)')
+    ylabel('Contrast Sensitivity (%)')
+    set(gca, 'XTick', [0.1, 1, 10, 100], 'XTickLabel', {'0.1', '1', '10', '100'}, 'TickDir', 'out', 'FontSize', 20)
+    set(gca, 'YTick', [1, 100, 1000], 'YTickLabel', {'1', '100', '1000'}, 'TickDir', 'out', 'FontSize', 20)    
+    title([allSegments{s} ' segment aperture'])
+    box off;
+    legend(labelEccen, 'FontSize',20, 'Location', 'Best'); legend boxoff
+    
+end
+
+if saveFigures
+    print(fullfile(figureDir, sprintf('Fig5_SpatFreqLimits_%s', whichObserver)),'-dpng');
+end
+
+
+
+##### SOURCE END #####
+--></body></html>

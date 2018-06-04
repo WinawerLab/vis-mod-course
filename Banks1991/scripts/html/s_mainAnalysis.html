@@ -1,0 +1,656 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>s_mainAnalysis</title><meta name="generator" content="MATLAB 9.1"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2018-06-04"><meta name="DC.source" content="s_mainAnalysis.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#1">s_mainAnalysis.m</a></li><li><a href="#2">0. SET GENERAL PARAMETERS</a></li><li><a href="#3">1. SET EXPERIMENT PARAMETERS</a></li><li><a href="#4">2. OPTICS: Create a diffraction limited optical wavefront</a></li><li><a href="#6">3. PHOTORECEPTOR: Create Cone Mosaic</a></li><li><a href="#7">4. SCENE/STIMULI: Create OI Sequence</a></li><li><a href="#9">5.  ISOMERIZATION RATE: Compute absorptions</a></li><li><a href="#11">6. CALCULATE CONTRAST SENSITIVITY: First calculate d-prime from two stimuli</a></li><li><a href="#13">For future study, create a hexagonal cone mosaic (computational expensive)</a></li></ul></div><h2 id="1">s_mainAnalysis.m</h2><pre class="codeinput"><span class="comment">% Script to create an ideal observer model based on the article by Banks et</span>
+<span class="comment">% al. (1991).</span>
+
+<span class="comment">% Full citation:</span>
+<span class="comment">% Peripheral spatial vision: limits imposed by optics, photoreceptors, and</span>
+<span class="comment">% receptor pooling. (1991) Banks, M.S., Sekuler, S.B., &amp; Anderson, S.J.</span>
+<span class="comment">% Journal of the Optical Society of America A (JOSAA). Vol 8, No 11,</span>
+<span class="comment">% 1775-1787.</span>
+
+<span class="comment">% DESCRIPTION:</span>
+<span class="comment">% This main analysis can recompute Figure 5, the ideal observer model, as</span>
+<span class="comment">% follows:</span>
+<span class="comment">%   0. Set up general parameters:</span>
+<span class="comment">%       - Check if you want to print out text/figures, save results, select</span>
+<span class="comment">%       observer (for now, only ideal, hopefully later we can also compute</span>
+<span class="comment">%       human observer).</span>
+<span class="comment">%   1. Set up experimental parameters:</span>
+<span class="comment">%       - Load stimulus parameters, like size, spatial frequency, etc. for</span>
+<span class="comment">%       gabor stimulus (alpha) and a blank stimulus (beta)</span>
+<span class="comment">%   2. Create optics</span>
+<span class="comment">%   3. Create photoreceptor mosaic</span>
+<span class="comment">%   4. Create stimulus presentation with previous loaded parameters</span>
+<span class="comment">%   5. Calculate isomerization rate per cone, per stimulus</span>
+<span class="comment">%   6. Compute d-prime from photon absorptions for stimulus alpha and beta</span>
+
+<span class="comment">% To visualize results, as in figure 5, use s_visualizeResults.m</span>
+
+
+<span class="comment">% DEPENDENCIES:</span>
+<span class="comment">%   This script requires ISETBio</span>
+
+<span class="comment">% AUTHOR:</span>
+<span class="comment">%   Eline Kupers, 2018, NYU</span>
+</pre><h2 id="2">0. SET GENERAL PARAMETERS</h2><pre class="codeinput">verbose       = true;       <span class="comment">% Print out text/figures?</span>
+saveResults   = true;        <span class="comment">% Same d-prime results</span>
+deg2m         = 0.3 * 0.001; <span class="comment">% 3 deg per mm, .001 mm per meter</span>
+
+whichObserver = <span class="string">'ideal'</span>;     <span class="comment">% choose from 'ideal' or 'human'</span>
+segment       = <span class="string">'outer'</span>;     <span class="comment">% choose from 'inner' or 'outer' cone segment</span>
+</pre><h2 id="3">1. SET EXPERIMENT PARAMETERS</h2><pre class="codeinput"><span class="comment">% Load experiment parameters</span>
+expParams = loadExpParamsBanks1991;
+
+<span class="comment">% Set a dummy contrast level to create stimulus test params</span>
+thisContrast = expParams.contrastLevels(1);
+
+<span class="comment">% Load scene parameters</span>
+sparams = getSceneParams;
+</pre><h2 id="4">2. OPTICS: Create a diffraction limited optical wavefront</h2><pre class="codeinput"><span class="comment">% Ideal observer model takes into account:</span>
+<span class="comment">% Pupil size, ocular media transmittance and photoreceptor</span>
+<span class="comment">% properties of the human eye at 0, 2, 5, 10, 20, 40 deg</span>
+<span class="comment">% eccentricity (horizontal VF, nasal retina).</span>
+<span class="comment">% OTF is modeled as optics diffraction limited and identical at</span>
+<span class="comment">% all eccentricities</span>
+
+<span class="comment">% Human subjects are one emmetrope and one 0.75-D myope, using</span>
+<span class="comment">% 1.5 mm artificial pupil</span>
+
+oi = getOptics(whichObserver, verbose);
+
+<span class="keyword">for</span> thisEccen = 0; <span class="comment">%expParams.eccen(:,1)' % Choose from 0, 2, 5, 10, 20, 40 or all using: expParams.eccen(:,1)'</span>
+</pre><pre class="codeinput">    clear <span class="string">alphaAbsorptions</span> <span class="string">betaAbsorptions</span>
+</pre><h2 id="6">3. PHOTORECEPTOR: Create Cone Mosaic</h2><pre class="codeinput">    <span class="comment">% Curcio PR data was used to model inner cone segment</span>
+    <span class="comment">% diameters and cone density.</span>
+    <span class="comment">% Data from Polyak, Cheng-Yu &amp; van Sluijters were used to</span>
+    <span class="comment">% calculate outer segment diameter in paper. Both inner and</span>
+    <span class="comment">% outer cone segment sizes were based on figure 1 in paper.</span>
+
+    cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, whichObserver, segment, verbose);
+</pre><img vspace="5" hspace="5" src="s_mainAnalysis_01.png" alt=""> <h2 id="7">4. SCENE/STIMULI: Create OI Sequence</h2><pre class="codeinput">    <span class="comment">% Create an ISETBIO OI Sequence: - The stimuli are horizontal</span>
+    <span class="comment">% Gabor patches, presented foveally or along the horizontal</span>
+    <span class="comment">% meridian 2AFC detection task: One Gabor presented abruptly</span>
+    <span class="comment">% for 100 ms intervals and one blank screen. Task was to say</span>
+    <span class="comment">% which interval there was a Gabor - Average luminance = 762</span>
+    <span class="comment">% cd/m2 - Retinal illuminance was 1348 Td. - Contrast levels</span>
+    <span class="comment">% were varied between 1-100%</span>
+
+    <span class="keyword">for</span> thisSpatFreq = expParams.sf(1,:) <span class="comment">% Or choose from [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8, 10, 16, 26]</span>
+
+        <span class="comment">% Find the indices of corresponding target size</span>
+        idx = [find(thisEccen == expParams.eccen(:,1)), find(thisSpatFreq == expParams.sf(1,:))];
+
+        <span class="comment">% Get the Gaussian window of the stimulus target</span>
+        thisTargetSize = expParams.sd(idx(1),idx(2));
+
+        <span class="keyword">if</span> ~isnan(thisTargetSize)
+            <span class="keyword">if</span> verbose; fprintf(<span class="string">'\nSimulating Banks 1991: %s observer, %s cone segment, at %d deg eccentricity, with %2.2f cpd spatial frequency\n'</span>, whichObserver, segment, thisEccen, thisSpatFreq); <span class="keyword">end</span>
+
+            <span class="comment">% Load stimulus params</span>
+            [tparams, tseries] = getStimulusParams(thisContrast, thisTargetSize, thisSpatFreq);
+
+            <span class="comment">% The two harmonics are 'blended', which means at each moment</span>
+            <span class="comment">% in time we have a weighted sum of the two where the weights</span>
+            <span class="comment">% sum to 1.</span>
+            [ois(1), scene1] = oisCreate(<span class="string">'harmonic'</span>,<span class="string">'blend'</span>,tseries, <span class="keyword">...</span>
+                <span class="string">'testParameters'</span>,tparams{1},<span class="keyword">...</span>
+                <span class="string">'sceneParameters'</span>,sparams, <span class="keyword">...</span>
+                <span class="string">'oi'</span>, oi);
+
+            <span class="comment">% Loop over stimulus contrast levels</span>
+            <span class="keyword">if</span> verbose; fprintf(<span class="string">'Simulating Banks 1991: Compute cone photon absorptions'</span>); <span class="keyword">end</span>
+
+            <span class="keyword">for</span> c = expParams.contrastLevels;  <span class="keyword">if</span> verbose; fprintf(<span class="string">'.'</span>); <span class="keyword">end</span>
+</pre><pre class="codeinput">                <span class="comment">% Recompute stim for particular contrast</span>
+                tparams{2}(2).contrast = c;
+
+                [ois(2), scene2] = oisCreate(<span class="string">'harmonic'</span>,<span class="string">'blend'</span>,tseries, <span class="keyword">...</span>
+                    <span class="string">'testParameters'</span>,tparams{2},<span class="keyword">...</span>
+                    <span class="string">'sceneParameters'</span>,sparams, <span class="keyword">...</span>
+                    <span class="string">'oi'</span>, oi);
+</pre><h2 id="9">5.  ISOMERIZATION RATE: Compute absorptions</h2><p>Result is a 6D array (contrast x SF x trials x cols x rows x time points)</p><pre class="codeinput">                alphaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(1), <span class="string">'currentFlag'</span>, false);
+                betaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(2), <span class="string">'currentFlag'</span>, false);
+</pre><pre class="codeinput">            <span class="keyword">end</span>
+
+            <span class="keyword">if</span> verbose; fprintf(<span class="string">' Done!\n'</span>); <span class="keyword">end</span>
+
+        <span class="keyword">else</span> <span class="comment">% If no stimulus defined in table 1, add NaNs to array</span>
+            <span class="keyword">if</span> verbose
+                fprintf(<span class="string">'\nSimulating Banks 1991: No stimulus at %d deg eccentricity, %2.2f cpd spatial frequency\n'</span>, thisEccen, thisSpatFreq)
+                fprintf(<span class="string">'Simulating Banks 1991: Replace absorptions with NaNs\n'</span>);
+            <span class="keyword">end</span>
+
+            alphaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:(expParams.duration*100)+1) = <span class="keyword">...</span>
+                NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, (expParams.duration*100)+1);
+            betaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:(expParams.duration*100)+1) = <span class="keyword">...</span>
+                NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, (expParams.duration*100)+1);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+
+    <span class="comment">% Visualize scene and cone mosaic absorptions</span>
+    <span class="keyword">if</span> verbose
+        <span class="comment">% Visualize the OIS</span>
+        ois(2).visualize(<span class="string">'movieilluminance'</span>);
+
+        <span class="comment">% Visualize the scene</span>
+        ieAddObject(scene2{1});
+        ieAddObject(scene2{2});
+        sceneWindow;
+
+        <span class="comment">% Now, show the time series of weighting the Gabor and blank stimulus</span>
+        ois(2).visualize(<span class="string">'weights'</span>);
+
+        <span class="comment">% Show cone mosaic and absorption movie</span>
+        cMosaic.window;
+    <span class="keyword">end</span>
+
+    <span class="comment">% Do some checks:</span>
+    <span class="comment">% Check mean luminance, geisler's computation of isomerization:</span>
+    [luminance, meanLuminance] = sceneCalculateLuminance(scene2{2}); <span class="comment">%  Or alternatively?:   lum =   ois(2).oiModulated.data.photons;</span>
+    coneApertureDiameterMinutes = 2*sqrt((((sqrt(cMosaic.pigment.pdWidth*1e6*cMosaic.pigment.pdHeight*1e6)/300)*60)^2)/pi);
+    isomerizationsGeisler = IsomerizationsFromLuminanceGeisler(meanLuminance,0.1,1.5, <span class="string">'coneApertureDiameterMinutes'</span>, coneApertureDiameterMinutes);
+
+    <span class="comment">% Check Isetbio computation of isomerization for one trial, one contrast,</span>
+    <span class="comment">% one eccentricity, one spatial frequency</span>
+    thisTrialAbsorptions = cMosaic.absorptions(:);
+
+    coneLocations = cMosaic.pattern(:);
+    sumIsomerizations = zeros(3,1);
+    nSummed = zeros(3,1);
+    <span class="keyword">for</span> jj = 1:length(coneLocations)
+        coneType = coneLocations(jj)-1;
+        sumIsomerizations(coneType) = sumIsomerizations(coneType)+thisTrialAbsorptions(jj);
+        nSummed(coneType) = nSummed(coneType) + 1;
+    <span class="keyword">end</span>
+    isomerizationsIsetbio = sumIsomerizations ./ nSummed;
+
+    <span class="keyword">if</span> verbose
+        fprintf(<span class="string">'ISETBIO''s estimate of mean Gabor scene luminance: %3.2f cd/m2\n'</span>, meanLuminance);
+        fprintf(<span class="string">'ISETBIO''s absorption count : %3.2f photons\n'</span>, isomerizationsIsetbio);
+        fprintf(<span class="string">'Geislers''s absorption count : %3.2f photons\n'</span>, isomerizationsGeisler);
+    <span class="keyword">end</span>
+</pre><pre class="codeoutput">
+Simulating Banks 1991: No stimulus at 0 deg eccentricity, 0.25 cpd spatial frequency
+Simulating Banks 1991: Replace absorptions with NaNs
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 0.40 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 0.65 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 1.00 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 1.60 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 2.60 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 4.00 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 6.50 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: No stimulus at 0 deg eccentricity, 8.00 cpd spatial frequency
+Simulating Banks 1991: Replace absorptions with NaNs
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 10.00 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 16.00 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+
+Simulating Banks 1991: ideal observer, outer cone segment, at 0 deg eccentricity, with 26.00 cpd spatial frequency
+Simulating Banks 1991: Compute cone photon absorptions............................ Done!
+ISETBIO's estimate of mean Gabor scene luminance: 762.00 cd/m2
+ISETBIO's absorption count : 30.04 photons
+ISETBIO's absorption count : 22.54 photons
+ISETBIO's absorption count : 3.25 photons
+Geislers's absorption count : 636.93 photons
+</pre><img vspace="5" hspace="5" src="s_mainAnalysis_02.png" alt=""> <img vspace="5" hspace="5" src="s_mainAnalysis_03.png" alt=""> <img vspace="5" hspace="5" src="s_mainAnalysis_04.png" alt=""> <h2 id="11">6. CALCULATE CONTRAST SENSITIVITY: First calculate d-prime from two stimuli</h2><pre class="codeinput">    <span class="comment">% Set function to calculate d-prime (Based on Log likelihood)</span>
+    dPrime = dPrimeFunction;
+
+    thisdPrime = [];
+    <span class="keyword">for</span> c = 1:length(expParams.contrastLevels)
+        <span class="keyword">for</span> sf=1:size(alphaAbsorptions,2)
+
+            this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
+            this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
+
+            thisdPrime(c, sf) = dPrime(this_alpha,this_beta);
+
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+
+    <span class="comment">% Save result, if requested. These results will be loaded by</span>
+    <span class="comment">% s_visualizeResults.m</span>
+    <span class="keyword">if</span> saveResults
+        <span class="keyword">if</span> verbose; fprintf(<span class="string">'Simulating Banks 1991: Save d-prime\n'</span>); <span class="keyword">end</span>
+
+        saveDir = fullfile(banksRootPath, <span class="string">'results'</span>);
+        <span class="keyword">if</span> ~exist(saveDir, <span class="string">'dir'</span>); mkdir(saveDir); <span class="keyword">end</span>
+        save(fullfile(saveDir, sprintf(<span class="string">'dPrime_%s_%s_eccen%d.mat'</span>, whichObserver, segment, thisEccen)), <span class="string">'thisdPrime'</span>);
+    <span class="keyword">end</span>
+</pre><pre class="codeoutput">Simulating Banks 1991: Save d-prime
+</pre><pre class="codeinput"><span class="keyword">end</span>
+
+<span class="keyword">return</span>
+</pre><pre class="codeoutput">Warning: Selected radius is very small. Increasing to 25 
+Complex otf values
+</pre><h2 id="13">For future study, create a hexagonal cone mosaic (computational expensive)</h2><pre class="codeinput"><span class="comment">% Set Hexagonal Mosaic import/export options</span>
+saveMosaic = false;                                 <span class="comment">% whether to save the mosaic</span>
+loadMosaic = false;                                 <span class="comment">% whether to load a previously saved mosaic</span>
+saveMosaicPDF = false;                              <span class="comment">% whether to save a PDF of the mosaic</span>
+
+quality.tolerance1 = 0.5;                           <span class="comment">% larger than default tolerances to speed-up computation. For production work, either do not set, or set to equal or lower than 0.01</span>
+quality.tolerance2 = 0.05;                          <span class="comment">% larger than default tolerances to speed-up computation, For production work, either do not set, or set to equal or lower than 0.001</span>
+quality.marginF = [];                               <span class="comment">% How much larger lattice to generate so as to minimize artifacts in cone spacing near the edges. If empty, a dynamic adjustment of margin is done for mosaics &lt; 1.0 degs</span>
+
+
+
+HexMosaicParams = struct(<span class="keyword">...</span>
+    <span class="string">'name'</span>, <span class="string">'the hex mosaic'</span>, <span class="keyword">...</span>
+    <span class="string">'resamplingFactor'</span>, 9, <span class="keyword">...</span><span class="comment">                      % Sets underlying pixel spacing; controls the rectangular sampling of the hex mosaic grid</span>
+    <span class="string">'eccBasedConeDensity'</span>, true, <span class="keyword">...</span><span class="comment">                % Whether to have an eccentricity based, spatially - varying density</span>
+    <span class="string">'sConeMinDistanceFactor'</span>, 3.0, <span class="keyword">...</span><span class="comment">              % Min distance between neighboring S-cones = f * local cone separation - used to make the S-cone lattice semi-regular</span>
+    <span class="string">'sConeFreeRadiusMicrons'</span>, 0.15*300, <span class="keyword">...</span><span class="comment">         % Radius of S-cone free retina, in microns (here set to 0.15 deg).</span>
+    <span class="string">'spatialDensity'</span>, [0 6/10 3/10 1/10]<span class="keyword">...</span><span class="comment">         % With a LMS density of of 6:3:1</span>
+    );
+
+<span class="comment">% Set FOVs examined</span>
+HexMosaicParams.fovDegs = sparams.fov;                 <span class="comment">% mosaic FOV</span>
+
+<span class="comment">% Create the hexagonal mosaic</span>
+theHexMosaic = coneMosaicHex(HexMosaicParams.resamplingFactor, <span class="keyword">...</span>
+    <span class="string">'name'</span>, HexMosaicParams.name, <span class="keyword">...</span>
+    <span class="string">'fovDegs'</span>, HexMosaicParams.fovDegs, <span class="keyword">...</span>
+    <span class="string">'eccBasedConeDensity'</span>, HexMosaicParams.eccBasedConeDensity, <span class="keyword">...</span>
+    <span class="string">'sConeMinDistanceFactor'</span>, HexMosaicParams.sConeMinDistanceFactor, <span class="keyword">...</span>
+    <span class="string">'sConeFreeRadiusMicrons'</span>, HexMosaicParams.sConeFreeRadiusMicrons, <span class="keyword">...</span>
+    <span class="string">'spatialDensity'</span>, HexMosaicParams.spatialDensity, <span class="keyword">...</span>
+    <span class="string">'latticeAdjustmentPositionalToleranceF'</span>, quality.tolerance1, <span class="keyword">...</span>
+    <span class="string">'latticeAdjustmentDelaunayToleranceF'</span>, quality.tolerance2, <span class="keyword">...</span>
+    <span class="string">'marginF'</span>, quality.marginF <span class="keyword">...</span>
+    );
+
+
+theHexMosaic.displayInfo();
+
+<span class="comment">% Visualize the mosaic, showing both the light collecting area (inner</span>
+<span class="comment">% segment) and the geometric area</span>
+visualizedAperture = <span class="string">'lightCollectingArea'</span>; <span class="comment">% choose between 'both', 'lightCollectingArea', 'geometricArea'</span>
+theHexMosaic.visualizeGrid(<span class="keyword">...</span>
+    <span class="string">'visualizedConeAperture'</span>, visualizedAperture, <span class="keyword">...</span>
+    <span class="string">'apertureShape'</span>, <span class="string">'disks'</span>, <span class="keyword">...</span>
+    <span class="string">'panelPosition'</span>, [1 1], <span class="string">'generateNewFigure'</span>, true);
+
+<span class="comment">% Compute the cone isomerizations / absorptions</span>
+isomerizationsHex = theHexMosaic.compute(ois,<span class="string">'currentFlag'</span>,false);
+
+
+<span class="comment">% Visualize</span>
+theHexMosaic.window;
+</pre><p class="footer"><br><a href="http://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2016b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%% s_mainAnalysis.m
+
+% Script to create an ideal observer model based on the article by Banks et
+% al. (1991).
+
+% Full citation:
+% Peripheral spatial vision: limits imposed by optics, photoreceptors, and
+% receptor pooling. (1991) Banks, M.S., Sekuler, S.B., & Anderson, S.J.
+% Journal of the Optical Society of America A (JOSAA). Vol 8, No 11,
+% 1775-1787.
+
+% DESCRIPTION:
+% This main analysis can recompute Figure 5, the ideal observer model, as
+% follows:
+%   0. Set up general parameters:
+%       - Check if you want to print out text/figures, save results, select
+%       observer (for now, only ideal, hopefully later we can also compute
+%       human observer).
+%   1. Set up experimental parameters:
+%       - Load stimulus parameters, like size, spatial frequency, etc. for
+%       gabor stimulus (alpha) and a blank stimulus (beta)
+%   2. Create optics
+%   3. Create photoreceptor mosaic
+%   4. Create stimulus presentation with previous loaded parameters
+%   5. Calculate isomerization rate per cone, per stimulus
+%   6. Compute d-prime from photon absorptions for stimulus alpha and beta
+
+% To visualize results, as in figure 5, use s_visualizeResults.m
+
+
+% DEPENDENCIES:
+%   This script requires ISETBio
+
+% AUTHOR:
+%   Eline Kupers, 2018, NYU
+
+%% 0. SET GENERAL PARAMETERS
+
+verbose       = true;       % Print out text/figures?
+saveResults   = true;        % Same d-prime results
+deg2m         = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
+
+whichObserver = 'ideal';     % choose from 'ideal' or 'human'
+segment       = 'outer';     % choose from 'inner' or 'outer' cone segment
+
+
+%% 1. SET EXPERIMENT PARAMETERS
+
+% Load experiment parameters
+expParams = loadExpParamsBanks1991;
+
+% Set a dummy contrast level to create stimulus test params
+thisContrast = expParams.contrastLevels(1);
+
+% Load scene parameters
+sparams = getSceneParams;
+
+%% 2. OPTICS: Create a diffraction limited optical wavefront
+
+% Ideal observer model takes into account:
+% Pupil size, ocular media transmittance and photoreceptor
+% properties of the human eye at 0, 2, 5, 10, 20, 40 deg
+% eccentricity (horizontal VF, nasal retina).
+% OTF is modeled as optics diffraction limited and identical at
+% all eccentricities
+
+% Human subjects are one emmetrope and one 0.75-D myope, using
+% 1.5 mm artificial pupil
+
+oi = getOptics(whichObserver, verbose);
+
+for thisEccen = 0; %expParams.eccen(:,1)' % Choose from 0, 2, 5, 10, 20, 40 or all using: expParams.eccen(:,1)'
+    
+    clear alphaAbsorptions betaAbsorptions
+    %% 3. PHOTORECEPTOR: Create Cone Mosaic
+    
+    % Curcio PR data was used to model inner cone segment
+    % diameters and cone density.
+    % Data from Polyak, Cheng-Yu & van Sluijters were used to
+    % calculate outer segment diameter in paper. Both inner and
+    % outer cone segment sizes were based on figure 1 in paper.
+    
+    cMosaic = getConeMosaic(expParams, thisEccen, deg2m, sparams, whichObserver, segment, verbose);
+    
+    %% 4. SCENE/STIMULI: Create OI Sequence
+    
+    % Create an ISETBIO OI Sequence: - The stimuli are horizontal
+    % Gabor patches, presented foveally or along the horizontal
+    % meridian 2AFC detection task: One Gabor presented abruptly
+    % for 100 ms intervals and one blank screen. Task was to say
+    % which interval there was a Gabor - Average luminance = 762
+    % cd/m2 - Retinal illuminance was 1348 Td. - Contrast levels
+    % were varied between 1-100%
+    
+    for thisSpatFreq = expParams.sf(1,:) % Or choose from [0.25, 0.4, 0.65, 1, 1.6, 2.6, 4, 6.5, 8, 10, 16, 26]
+        
+        % Find the indices of corresponding target size
+        idx = [find(thisEccen == expParams.eccen(:,1)), find(thisSpatFreq == expParams.sf(1,:))];
+        
+        % Get the Gaussian window of the stimulus target
+        thisTargetSize = expParams.sd(idx(1),idx(2));
+        
+        if ~isnan(thisTargetSize)
+            if verbose; fprintf('\nSimulating Banks 1991: %s observer, %s cone segment, at %d deg eccentricity, with %2.2f cpd spatial frequency\n', whichObserver, segment, thisEccen, thisSpatFreq); end
+            
+            % Load stimulus params
+            [tparams, tseries] = getStimulusParams(thisContrast, thisTargetSize, thisSpatFreq);
+            
+            % The two harmonics are 'blended', which means at each moment
+            % in time we have a weighted sum of the two where the weights
+            % sum to 1.
+            [ois(1), scene1] = oisCreate('harmonic','blend',tseries, ...
+                'testParameters',tparams{1},...
+                'sceneParameters',sparams, ...
+                'oi', oi);
+            
+            % Loop over stimulus contrast levels
+            if verbose; fprintf('Simulating Banks 1991: Compute cone photon absorptions'); end
+            
+            for c = expParams.contrastLevels;  if verbose; fprintf('.'); end
+                
+                % Recompute stim for particular contrast
+                tparams{2}(2).contrast = c;
+                
+                [ois(2), scene2] = oisCreate('harmonic','blend',tseries, ...
+                    'testParameters',tparams{2},...
+                    'sceneParameters',sparams, ...
+                    'oi', oi);
+                
+                %% 5.  ISOMERIZATION RATE: Compute absorptions
+                % Result is a 6D array (contrast x SF x trials x cols x rows x time points)
+                
+                alphaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(1), 'currentFlag', false);
+                betaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(2), 'currentFlag', false);
+                
+                                
+            end
+            
+            if verbose; fprintf(' Done!\n'); end
+        
+        else % If no stimulus defined in table 1, add NaNs to array
+            if verbose
+                fprintf('\nSimulating Banks 1991: No stimulus at %d deg eccentricity, %2.2f cpd spatial frequency\n', thisEccen, thisSpatFreq)
+                fprintf('Simulating Banks 1991: Replace absorptions with NaNs\n');
+            end
+            
+            alphaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:(expParams.duration*100)+1) = ...
+                NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, (expParams.duration*100)+1);
+            betaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:(expParams.duration*100)+1) = ...
+                NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, (expParams.duration*100)+1);
+        end
+    end
+    
+    
+    % Visualize scene and cone mosaic absorptions
+    if verbose
+        % Visualize the OIS
+        ois(2).visualize('movieilluminance');
+        
+        % Visualize the scene
+        ieAddObject(scene2{1});
+        ieAddObject(scene2{2});
+        sceneWindow;
+        
+        % Now, show the time series of weighting the Gabor and blank stimulus
+        ois(2).visualize('weights');
+        
+        % Show cone mosaic and absorption movie
+        cMosaic.window;
+    end
+    
+    % Do some checks:
+    % Check mean luminance, geisler's computation of isomerization:
+    [luminance, meanLuminance] = sceneCalculateLuminance(scene2{2}); %  Or alternatively?:   lum =   ois(2).oiModulated.data.photons;
+    coneApertureDiameterMinutes = 2*sqrt((((sqrt(cMosaic.pigment.pdWidth*1e6*cMosaic.pigment.pdHeight*1e6)/300)*60)^2)/pi);
+    isomerizationsGeisler = IsomerizationsFromLuminanceGeisler(meanLuminance,0.1,1.5, 'coneApertureDiameterMinutes', coneApertureDiameterMinutes);
+    
+    % Check Isetbio computation of isomerization for one trial, one contrast, 
+    % one eccentricity, one spatial frequency
+    thisTrialAbsorptions = cMosaic.absorptions(:);
+    
+    coneLocations = cMosaic.pattern(:);
+    sumIsomerizations = zeros(3,1);
+    nSummed = zeros(3,1);
+    for jj = 1:length(coneLocations)
+        coneType = coneLocations(jj)-1;
+        sumIsomerizations(coneType) = sumIsomerizations(coneType)+thisTrialAbsorptions(jj);
+        nSummed(coneType) = nSummed(coneType) + 1;
+    end
+    isomerizationsIsetbio = sumIsomerizations ./ nSummed;
+    
+    if verbose 
+        fprintf('ISETBIO''s estimate of mean Gabor scene luminance: %3.2f cd/m2\n', meanLuminance);
+        fprintf('ISETBIO''s absorption count : %3.2f photons\n', isomerizationsIsetbio);
+        fprintf('Geislers''s absorption count : %3.2f photons\n', isomerizationsGeisler); 
+    end
+    
+    %% 6. CALCULATE CONTRAST SENSITIVITY: First calculate d-prime from two stimuli
+    
+    % Set function to calculate d-prime (Based on Log likelihood)
+    dPrime = dPrimeFunction;
+    
+    thisdPrime = [];
+    for c = 1:length(expParams.contrastLevels)
+        for sf=1:size(alphaAbsorptions,2)
+            
+            this_alpha = squeeze(mean(alphaAbsorptions(c,sf, 1,:,:,:),6));
+            this_beta = squeeze(mean(betaAbsorptions(c,sf, 1,:,:,:),6));
+            
+            thisdPrime(c, sf) = dPrime(this_alpha,this_beta);
+            
+        end
+    end
+    
+    % Save result, if requested. These results will be loaded by
+    % s_visualizeResults.m
+    if saveResults
+        if verbose; fprintf('Simulating Banks 1991: Save d-prime\n'); end
+        
+        saveDir = fullfile(banksRootPath, 'results');
+        if ~exist(saveDir, 'dir'); mkdir(saveDir); end
+        save(fullfile(saveDir, sprintf('dPrime_%s_%s_eccen%d.mat', whichObserver, segment, thisEccen)), 'thisdPrime');
+    end
+    
+end
+
+return
+
+
+
+
+
+%% For future study, create a hexagonal cone mosaic (computational expensive)
+
+% Set Hexagonal Mosaic import/export options
+saveMosaic = false;                                 % whether to save the mosaic
+loadMosaic = false;                                 % whether to load a previously saved mosaic
+saveMosaicPDF = false;                              % whether to save a PDF of the mosaic
+
+quality.tolerance1 = 0.5;                           % larger than default tolerances to speed-up computation. For production work, either do not set, or set to equal or lower than 0.01
+quality.tolerance2 = 0.05;                          % larger than default tolerances to speed-up computation, For production work, either do not set, or set to equal or lower than 0.001
+quality.marginF = [];                               % How much larger lattice to generate so as to minimize artifacts in cone spacing near the edges. If empty, a dynamic adjustment of margin is done for mosaics < 1.0 degs
+
+
+
+HexMosaicParams = struct(...
+    'name', 'the hex mosaic', ...
+    'resamplingFactor', 9, ...                      % Sets underlying pixel spacing; controls the rectangular sampling of the hex mosaic grid
+    'eccBasedConeDensity', true, ...                % Whether to have an eccentricity based, spatially - varying density
+    'sConeMinDistanceFactor', 3.0, ...              % Min distance between neighboring S-cones = f * local cone separation - used to make the S-cone lattice semi-regular
+    'sConeFreeRadiusMicrons', 0.15*300, ...         % Radius of S-cone free retina, in microns (here set to 0.15 deg).
+    'spatialDensity', [0 6/10 3/10 1/10]...         % With a LMS density of of 6:3:1
+    );
+
+% Set FOVs examined
+HexMosaicParams.fovDegs = sparams.fov;                 % mosaic FOV
+
+% Create the hexagonal mosaic
+theHexMosaic = coneMosaicHex(HexMosaicParams.resamplingFactor, ...
+    'name', HexMosaicParams.name, ...
+    'fovDegs', HexMosaicParams.fovDegs, ...
+    'eccBasedConeDensity', HexMosaicParams.eccBasedConeDensity, ...
+    'sConeMinDistanceFactor', HexMosaicParams.sConeMinDistanceFactor, ...
+    'sConeFreeRadiusMicrons', HexMosaicParams.sConeFreeRadiusMicrons, ...
+    'spatialDensity', HexMosaicParams.spatialDensity, ...
+    'latticeAdjustmentPositionalToleranceF', quality.tolerance1, ...
+    'latticeAdjustmentDelaunayToleranceF', quality.tolerance2, ...
+    'marginF', quality.marginF ...
+    );
+
+
+theHexMosaic.displayInfo();
+
+% Visualize the mosaic, showing both the light collecting area (inner
+% segment) and the geometric area
+visualizedAperture = 'lightCollectingArea'; % choose between 'both', 'lightCollectingArea', 'geometricArea'
+theHexMosaic.visualizeGrid(...
+    'visualizedConeAperture', visualizedAperture, ...
+    'apertureShape', 'disks', ...
+    'panelPosition', [1 1], 'generateNewFigure', true);
+
+% Compute the cone isomerizations / absorptions
+isomerizationsHex = theHexMosaic.compute(ois,'currentFlag',false);
+
+
+% Visualize
+theHexMosaic.window;
+
+
+##### SOURCE END #####
+--></body></html>
