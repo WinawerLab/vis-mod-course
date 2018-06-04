@@ -29,19 +29,19 @@
 
 
 % DEPENDENCIES:
-%   This toolbox requires ISETBio
+%   This script requires ISETBio
 
 % AUTHOR:
 %   Eline Kupers, 2018, NYU
 
 %% 0. SET GENERAL PARAMETERS
 
-verbose       = false;       % Print out text/figures?
+verbose       = true;       % Print out text/figures?
 saveResults   = true;        % Same d-prime results
 deg2m         = 0.3 * 0.001; % 3 deg per mm, .001 mm per meter
 
 whichObserver = 'ideal';     % choose from 'ideal' or 'human'
-segment       = 'inner';     % choose from 'inner' or 'outer' cone segment
+segment       = 'outer';     % choose from 'inner' or 'outer' cone segment
 
 
 %% 1. SET EXPERIMENT PARAMETERS
@@ -101,7 +101,7 @@ for thisEccen = expParams.eccen(:,1)' %10 % Choose from 0, 2, 5, 10, 20, 40 or a
         thisTargetSize = expParams.sd(idx(1),idx(2));
         
         if ~isnan(thisTargetSize)
-            fprintf('\nSimulating Banks 1991: %s observer, %s cone segment, at %d deg eccentricity, with %2.2f cpd spatial frequency\n', whichObserver, segment, thisEccen, thisSpatFreq)
+            if verbose; fprintf('\nSimulating Banks 1991: %s observer, %s cone segment, at %d deg eccentricity, with %2.2f cpd spatial frequency\n', whichObserver, segment, thisEccen, thisSpatFreq); end
             
             % Load stimulus params
             [tparams, tseries] = getStimulusParams(thisContrast, thisTargetSize, thisSpatFreq);
@@ -112,35 +112,20 @@ for thisEccen = expParams.eccen(:,1)' %10 % Choose from 0, 2, 5, 10, 20, 40 or a
             [ois(1), scene1] = oisCreate('harmonic','blend',tseries, ...
                 'testParameters',tparams{1},...
                 'sceneParameters',sparams, ...
-                'oi', oi, ...
-                'meanluminance', 762);
+                'oi', oi);
             
             % Loop over stimulus contrast levels
-            fprintf('Simulating Banks 1991: Compute cone photon absorptions');
-
-            for c = expParams.contrastLevels
-                fprintf('.')
+            if verbose; fprintf('Simulating Banks 1991: Compute cone photon absorptions'); end
+            
+            for c = expParams.contrastLevels;  if verbose; fprintf('.'); end
+                
                 % Recompute stim for particular contrast
                 tparams{2}(2).contrast = c;
                 
                 [ois(2), scene2] = oisCreate('harmonic','blend',tseries, ...
                     'testParameters',tparams{2},...
                     'sceneParameters',sparams, ...
-                    'oi', oi, ...
-                    'meanluminance', 762);
-                
-                if verbose
-                    % Visualize the OIS
-                    ois(2).visualize('movieilluminance');
-                    
-                    % Visualize the scene
-                    ieAddObject(scene2{1});
-                    ieAddObject(scene2{2});
-                    sceneWindow;
-                    
-                    % Now, show the time series of weighting the Gabor and blank stimulus
-                    ois(2).visualize('weights');
-                end
+                    'oi', oi);
                 
                 %% 5.  ISOMERIZATION RATE: Compute absorptions
                 % Result is a 6D array (contrast x SF x trials x cols x rows x time points)
@@ -148,17 +133,16 @@ for thisEccen = expParams.eccen(:,1)' %10 % Choose from 0, 2, 5, 10, 20, 40 or a
                 alphaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(1), 'currentFlag', false);
                 betaAbsorptions(c==expParams.contrastLevels, thisSpatFreq==expParams.sf(1,:),:,:,:,:) = cMosaic.compute(ois(2), 'currentFlag', false);
                 
-                
-                % Check:
-                %                 lum =   ois(2).oiModulated.data.photons;
-                coneApertureDiameterMinutes = 2*sqrt((((sqrt(cMosaic.pigment.pdWidth*1e6*cMosaic.pigment.pdHeight*1e6)/300)*60)^2)/pi);
-                isomerizations = IsomerizationsFromLuminanceGeisler(762,expParams.duration,1.5, 'coneApertureDiameterMinutes', coneApertureDiameterMinutes);
-                
+                                
             end
-            fprintf(' Done!\n')
-        else % Add NaNs to array
-            fprintf('\nSimulating Banks 1991: No stimulus at %d deg eccentricity, %2.2f cpd spatial frequency\n', thisEccen, thisSpatFreq)
-            fprintf('Simulating Banks 1991: Replace absorptions with NaNs\n');
+            
+            if verbose; fprintf(' Done!\n'); end
+        
+        else % If no stimulus defined in table 1, add NaNs to array
+            if verbose
+                fprintf('\nSimulating Banks 1991: No stimulus at %d deg eccentricity, %2.2f cpd spatial frequency\n', thisEccen, thisSpatFreq)
+                fprintf('Simulating Banks 1991: Replace absorptions with NaNs\n');
+            end
             
             alphaAbsorptions(1:length(expParams.contrastLevels), thisSpatFreq==expParams.sf(1,:), expParams.nTrials, 1:cMosaic.rows, 1:cMosaic.cols, 1:(expParams.duration*100)+1) = ...
                 NaN(length(expParams.contrastLevels),1,expParams.nTrials,cMosaic.rows,cMosaic.cols, (expParams.duration*100)+1);
@@ -168,8 +152,48 @@ for thisEccen = expParams.eccen(:,1)' %10 % Choose from 0, 2, 5, 10, 20, 40 or a
     end
     
     
-    % Visualize cone mosaic absorptions
-    if verbose; cMosaic.window; end
+    % Visualize scene and cone mosaic absorptions
+    if verbose
+        % Visualize the OIS
+        ois(2).visualize('movieilluminance');
+        
+        % Visualize the scene
+        ieAddObject(scene2{1});
+        ieAddObject(scene2{2});
+        sceneWindow;
+        
+        % Now, show the time series of weighting the Gabor and blank stimulus
+        ois(2).visualize('weights');
+        
+        % Show cone mosaic and absorption movie
+        cMosaic.window;
+    end
+    
+    % Do some checks:
+    % Check mean luminance, geisler's computation of isomerization:
+    [luminance, meanLuminance] = sceneCalculateLuminance(scene2{2}); %  Or alternatively?:   lum =   ois(2).oiModulated.data.photons;
+    coneApertureDiameterMinutes = 2*sqrt((((sqrt(cMosaic.pigment.pdWidth*1e6*cMosaic.pigment.pdHeight*1e6)/300)*60)^2)/pi);
+    isomerizationsGeisler = IsomerizationsFromLuminanceGeisler(meanLuminance,0.1,1.5, 'coneApertureDiameterMinutes', coneApertureDiameterMinutes);
+    
+    % Check Isetbio computation of isomerization for one trial, one contrast, 
+    % one eccentricity, one spatial frequency
+    thisTrialAbsorptions = cMosaic.absorptions(:);
+    
+    coneLocations = cMosaic.pattern(:);
+    sumIsomerizations = zeros(3,1);
+    nSummed = zeros(3,1);
+    for jj = 1:length(coneLocations)
+        coneType = coneLocations(jj)-1;
+        sumIsomerizations(coneType) = sumIsomerizations(coneType)+thisTrialAbsorptions(jj);
+        nSummed(coneType) = nSummed(coneType) + 1;
+    end
+    isomerizationsIsetbio = sumIsomerizations ./ nSummed;
+    
+    if verbose 
+        fprintf('ISETBIO''s estimate of mean Gabor scene luminance: %3.2f cd/m2\n', meanLuminance);
+        fprintf('ISETBIO''s absorption count : %3.2f photons\n', isomerizationsIsetbio);
+        fprintf('Geislers''s absorption count : %3.2f photons\n', isomerizationsGeisler); 
+    end
     
     %% 6. CALCULATE CONTRAST SENSITIVITY: First calculate d-prime from two stimuli
     
@@ -191,8 +215,8 @@ for thisEccen = expParams.eccen(:,1)' %10 % Choose from 0, 2, 5, 10, 20, 40 or a
     % Save result, if requested. These results will be loaded by
     % s_visualizeResults.m
     if saveResults
-        fprintf('Simulating Banks 1991: Save d-prime\n');
-
+        if verbose; fprintf('Simulating Banks 1991: Save d-prime\n'); end
+        
         saveDir = fullfile(banksRootPath, 'results');
         if ~exist(saveDir, 'dir'); mkdir(saveDir); end
         save(fullfile(saveDir, sprintf('dPrime_%s_%s_eccen%d.mat', whichObserver, segment, thisEccen)), 'thisdPrime');
@@ -255,7 +279,7 @@ theHexMosaic.visualizeGrid(...
     'apertureShape', 'disks', ...
     'panelPosition', [1 1], 'generateNewFigure', true);
 
-%% 4. Compute the cone isomerizations / absorptions
+% Compute the cone isomerizations / absorptions
 isomerizationsHex = theHexMosaic.compute(ois,'currentFlag',false);
 
 
