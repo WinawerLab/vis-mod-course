@@ -24,6 +24,15 @@ FOLDERS
 - scripts 			: folder containing the two main scripts: s_mainAnalysis and s_visualizeResults and html code 				  for published script
 
 
+Next to do’s:
+- Look into differences ISETBIO and Geisler computation of cone absorptions
+- What target sizes are used for the stimuli at spatial frequencies and eccentricities not reported in table 1?
+- Why is the ideal observer worse at the vary small spatial frequencies, compared to intermediate spatial frequencies?
+- Implement retinal ganglion cell layer
+- Implement option to simulate human observer results (computational observer model, add photon noise, human optics, etc)
+
+
+
 
 Full citation:
 Peripheral spatial vision: limits imposed by optics, photoreceptors, and
