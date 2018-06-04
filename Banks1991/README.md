@@ -22,10 +22,11 @@ to add ISETBio and this code repository to your paths.
 - results			: folder to save results (d prime, per eccentricity, per cone segment), 
 				  content will be ignored by .gitignore
 - scripts 			: folder containing the two main scripts (and html code for published scripts):
+					
 					`s_mainAnalysis`
 					`s_visualizeResults`		  	
 
-## To do’s:
+## Future to do’s:
 - Look into differences ISETBio and Geisler computation of cone absorptions
 - What target sizes are used for the stimuli at spatial frequencies and eccentricities not reported in table 1?
 - Why is the ideal observer worse at the vary small spatial frequencies, compared to intermediate spatial frequencies?
