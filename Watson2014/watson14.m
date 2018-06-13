@@ -1,4 +1,3 @@
-function [ogecc, fittedVals] = watson14()
 clear all; clc; close all;
 %load data
 dataLoad_all;
@@ -157,8 +156,10 @@ line([17 17],ylim,'color','k','linestyle','--');
 legend('temporal','superior','nasal','inferior',...
     'disp zone temporal','disp zone others'); 
 legend('boxoff'); legend('location','northeast');
-title('figure 5'); grid on
+title('Figure 5'); grid on
 legend('location','west');
+ylabel('Density (deg^-^2)');
+xlabel('Eccentricity (deg)');
 %% Modeled displacement functions (solid curve) and points from the formula of Drasdo et al. (2007) (Figure 6)
 %load drasdo et al, data...approximation don't have actual data...
 %its inside dataLoad_all
@@ -204,6 +205,8 @@ ylim([-0.1, 2.5]); xlim([-16,16]);
 %add text
 text(10,2,'TEMPORAL');
 text(-10,2,'NASAL');
+ylabel('Displacement (deg)');
+xlabel('Eccentricity (deg)')
 %% Modeled displacement function based of Watson formula (figure 7)
 opt = optimoptions('fmincon','Algorithm','interior-point','MaxIter',10000);
 nasal = watson_form(1:16,:);
@@ -236,13 +239,15 @@ end
 % temporal and nasal fits on the wrong side in the plot ... I dont know.
 figure; 
 plot(temporal(:,1),temporal(:,2),'-b.',...
-    nasal(:,1),nasal(:,2),'-b.','markersize',15); hold on;
+    nasal(:,1),nasal(:,2),'-b.','markersize',30); hold on;
 line([0,0],ylim,'color','k','linewidth',1.5); grid on; title('Figure 7');
 %
-plot(temporal(:,1),fittedVals_nn{1},'k',...
-    nasal(:,1),fittedVals_nn{2},'k','markersize',15); hold on;
+plot(temporal(:,1),fittedVals_nn{1},'r',...
+    nasal(:,1),fittedVals_nn{2},'r','markersize',15); hold on;
 %ylim([-0.1, 2.5]); 
 xlim([-16,16]);
+ylabel('Density (deg^-^2)');
+xlabel('Eccentricity (deg)')
 %add text
 text(10,2000,'TEMPORAL');
 text(-10,2000,'NASAL');
@@ -254,11 +259,15 @@ r = 0:60;
 drasdoform = fzero*(1+(r/rm)).^-1;
 %plot Dacey and Drasdo data
 figure;
-plot(DaceyData(:,1),DaceyData(:,2),'r.','markersize',15); hold on
+plot(DaceyData(:,1),DaceyData(:,2),'r.','markersize',30); hold on
 plot(r,drasdoform,'k-','linewidth',1.5); grid on;
 xlim([0 60]); ylim([0 1]); 
 ylabel('Midget fraction'); 
 xlabel('Eccentricity (deg)');
+legend('Dacey','Drasdo'); 
+legend('boxoff'); 
+legend('location','west');
+title('Figure 8')
 %% mRGCf density formula as a function of eccentricity (Figure 9 - combining Drasdo & Watson formula)
 fzero = 1/1.12;
 rm = 41.03;
@@ -278,25 +287,25 @@ loglog(r_,watsonDrasdo(1,:),'r',r_,watsonDrasdo(2,:),'b',...
     r_,watsonDrasdo(3,:),'g',r_,watsonDrasdo(4,:),'k'); grid on
 legend('temporal','superior','nasal','inferior');
 legend('boxoff'); legend('location','northeast');
-title('figure 9'); xlim([0.9 110]);
+title('Figure 9'); xlim([0.9 110]);
 legend('location','west');
 xlabel('Eccentricity (deg)'); ylabel('Density (deg^-^2)');
 %% Formula for mRGCf spacing (Figure 10)
 % using the arbitrary x-values from figure 9
 for ii = 1:size(watsonDrasdo,1)
-    smf{ii} = sqrt(2./(sqrt(3)*(watsonDrasdo(ii,:))))./200;
+    smf{ii} = sqrt(2./(sqrt(3)*(watsonDrasdo(ii,:))))./210;
 end
 %mean & Horizontal spacing calculation
-meanSpacing = sqrt(2./(sqrt(3)*(mean(watsonDrasdo))))./200;
-Horizontal = sqrt(2./(sqrt(3)*(mean(watsonDrasdo([1,3],:)))))./200;
+meanSpacing = sqrt(2./(sqrt(3)*(mean(watsonDrasdo))))./210;
+Horizontal = sqrt(2./(sqrt(3)*(mean(watsonDrasdo([1,3],:)))))./210;
 % plot
 figure;
 plot(r_,smf{1},'r',r_,smf{2},'b',r_,smf{3},'g',r_,smf{4},'k'); hold on; grid on
 plot(r_,meanSpacing,'k--',r_,Horizontal,'c--');
 legend('temporal','superior','nasal','inferior','mean','horizontal');
-ylim([0 1.2]); xlabel('eccentrity (deg)'); ylabel('Spacing (deg)');
+ylim([0 1.09]); xlabel('eccentrity (deg)'); ylabel('Spacing (deg)');
 legend('boxoff'); legend('location','northwest');
-title('figure 10');
+title('Figure 10');
 %% Formula for on or off mRGCf spacing for eccentricities 0-10deg (Figure 11)
 %Density is halved and the spacings should be multiplied by sqrt of 2
 watsonDrasdo = watsonDrasdo/2;
@@ -310,7 +319,7 @@ plot(r_,smf{1},'r',r_,smf{2},'b',r_,smf{3},'g',r_,smf{4},'k'); hold on; grid on
 legend('temporal','superior','nasal','inferior','mean','horizontal');
 xlim([0 10]);xlabel('eccentrity (deg)'); ylabel('On or Off spacing (arcmin)');
 legend('boxoff'); legend('location','northwest');
-title('figure 11');
+title('Figure 11');
 %% Extension to arbitrary retinal location (x,y)
 % The idea is to now extend the Watson data so that I can blur an image a
 % pixel at a time by calculating the spacing at said pixel!
@@ -330,10 +339,42 @@ title('figure 11');
 % make vertical grating of sf of 8 & 1 and 11 degs right and left of center
 %remove the last row/column to make it symmetrical
 figure;
-[high_freq] = mk_grating(8,90,12); high_freq = high_freq(1:480,1:480);
-[low_freq] = mk_grating(0.75,90,12); low_freq = low_freq(1:480,1:480);
+[s,high_freq] = mk_grating(8,90,5); high_freq = high_freq(1:200,1:200);
+[~,low_freq] = mk_grating(0.75,90,5); low_freq = low_freq(1:200,1:200);
 %plot gratings
 subplot(1,2,1);imagesc(low_freq); colormap('gray');
 title('low sf 0.75 cpd 12 deg','fontsize',12); axis square; axis off;
 subplot(1,2,2);imagesc(high_freq); colormap('gray');
 title('high sf 8 cpd 12 deg','fontsize',12); axis square; axis off;
+%% separate into all retinal location 
+% this is what I will assume as the x-y placement of the retinal locations
+% create masks
+rows = 200;columns = 200;
+xCoords =  [0 100 200; 0 100 200; 0 100 0;200 100 200];
+yCoords =  [0 100 0; 200 100 200; 0 100 200; 0 100 200];
+for ii = 1:length(xCoords)
+mask{ii} = poly2mask(xCoords(ii,:), yCoords(ii,:), rows, columns);
+end
+full_mask = mask{1}+mask{2}+mask{3}+mask{4};
+%% create the iso-spacing contours (from Watson, 14 - equation 11)
+%using circles not ellipses...might be a problem dunno
+figure; colormap('gray'); 
+imagesc(full_mask); axis square; axis off; hold on;
+% define spacing in deg 
+rx = s(1:200); ry = rx;
+midpoint = 100;
+% ellipse
+for ii = 1:length(rx)
+    [x_e{ii},y_e{ii}] = mk_ellipse(rx(1),ry(1),midpoint,midpoint);
+    rx = rx+1; ry = ry+1;
+    plot(x_e{ii},y_e{ii},'b','linewidth',1.5); 
+end
+line([0 200], [200 0],'color','k'); 
+line([0 200], [0 200],'color','k');
+text(90,20,'SUPERIOR','fontsize',20);
+text(90,180,'INFERIOR','fontsize',20);
+text(150,100,'TEMPORAL','fontsize',20);
+text(20,100,'NASAL','fontsize',20);
+%% next I have to find which pixels touch which circles to get an rxy coordinate
+
+
