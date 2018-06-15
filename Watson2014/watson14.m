@@ -271,7 +271,7 @@ title('Figure 8')
 %% mRGCf density formula as a function of eccentricity (Figure 9 - combining Drasdo & Watson formula)
 fzero = 1/1.12;
 rm = 41.03;
-r_ = 0:100;
+r_ = 0:0.05:100;
 for ii = 1:length(paper_p)
     %temporal/superior/nasal/inferior
     a = paper_p(ii,1);
@@ -336,11 +336,11 @@ title('Figure 11');
 %% create gratings
 % Now we are going to try and blur two gratings...one of high sf and the
 % other low ...
-% make vertical grating of sf of 8 & 1 and 11 degs right and left of center
+% make vertical grating of sf of 8 & 0.75 and 20 degs right and left of center
 %remove the last row/column to make it symmetrical
 figure;
-[s,high_freq] = mk_grating(8,90,5); high_freq = high_freq(1:200,1:200);
-[~,low_freq] = mk_grating(0.75,90,5); low_freq = low_freq(1:200,1:200);
+[s,high_freq] = mk_grating(8,90,20); high_freq = high_freq(1:800,1:800);
+[~,low_freq] = mk_grating(0.75,90,20); low_freq = low_freq(1:800,1:800);
 %plot gratings
 subplot(1,2,1);imagesc(low_freq); colormap('gray');
 title('low sf 0.75 cpd 12 deg','fontsize',12); axis square; axis off;
@@ -349,32 +349,105 @@ title('high sf 8 cpd 12 deg','fontsize',12); axis square; axis off;
 %% separate into all retinal location 
 % this is what I will assume as the x-y placement of the retinal locations
 % create masks
-rows = 200;columns = 200;
-xCoords =  [0 100 200; 0 100 200; 0 100 0;200 100 200];
-yCoords =  [0 100 0; 200 100 200; 0 100 200; 0 100 200];
+rows = length(high_freq);columns = length(high_freq);
+max_ = length(high_freq); mid = length(high_freq)/2;
+xCoords =  [0 mid max_; 0 mid max_; 0 mid 0;max_ mid max_];
+yCoords =  [0 mid 0; max_ mid max_; 0 mid max_; 0 mid max_];
 for ii = 1:length(xCoords)
 mask{ii} = poly2mask(xCoords(ii,:), yCoords(ii,:), rows, columns);
 end
 full_mask = mask{1}+mask{2}+mask{3}+mask{4};
-%% create the iso-spacing contours (from Watson, 14 - equation 11)
-%using circles not ellipses...might be a problem dunno
+%% define the retinal locations and an x-y plane (this is just for show)
 figure; colormap('gray'); 
 imagesc(full_mask); axis square; axis off; hold on;
-% define spacing in deg 
-rx = s(1:200); ry = rx;
-midpoint = 100;
-% ellipse
-for ii = 1:length(rx)
-    [x_e{ii},y_e{ii}] = mk_ellipse(rx(1),ry(1),midpoint,midpoint);
-    rx = rx+1; ry = ry+1;
-    plot(x_e{ii},y_e{ii},'b','linewidth',1.5); 
+% define the retinal locations and an x-y plane
+line([0 max_], [max_ 0],'color','k'); 
+line([0 max_], [0 max_],'color','k');
+line([mid mid], ylim,'color','r');
+line(xlim, [mid mid],'color','r');
+title('retinal locations + (x,y) plane');
+%% turn pixels into x and y coordinates then to degrees
+%split image into x and y values
+%if x and y < 100  x = nasal / y = superior
+%if x > 100 & y < 100 x = temporal / y superior
+%if x < 100 & y > 100 x = nasal / y inferior
+%if x & y > 100 x = temporal / y inferior
+%positive x-vals temporal / negative nasal
+XY = pix2points(high_freq);
+% replace 0s with 1s because matlab cant handle 0 indexing..............
+temp = XY(:,2)==0; XY(temp,2)=1;
+XYtoDeg = [s(XY(:,1));s(XY(:,2))]';
+%% Calculate Rxy and spacing depending on the two retinal locations where (x,y) point lies
+%calculate rxy
+Rxy = sqrt(XYtoDeg(:,1).^2+XYtoDeg(:,2).^2);
+%make life easier
+r_ = r_(1:mid)';
+for ii = 1:length(XY)
+    %find the x val idx of figure 10 (r_) 
+    %then index the spacing at that eccentricity depending on what two
+    %quadrants the arc lies
+    spacingIdx = find(abs(r_-abs(XYtoDeg(ii)))<0.0001);
+    %
+    if XY(ii,:) < 100
+        spacing_1 = smf{3}; spacing_1 = spacing_1(spacingIdx);
+        spacing_2 = smf{2}; spacing_2 = spacing_2(spacingIdx);
+    elseif XY(ii,1) > 100 && XY(ii,2) < 100
+        spacing_1 = smf{1}; spacing_1 = spacing_1(spacingIdx);
+        spacing_2 = smf{2}; spacing_2 = spacing_2(spacingIdx);
+    elseif XY(ii,1) < 100 && XY(ii,2) > 100
+        spacing_1 = smf{3}; spacing_1 = spacing_1(spacingIdx);
+        spacing_2 = smf{4}; spacing_2 = spacing_2(spacingIdx);
+    elseif XY(ii,:) > 100
+        spacing_1 = smf{1}; spacing_1 = spacing_1(spacingIdx);
+        spacing_2 = smf{4}; spacing_2 = spacing_2(spacingIdx);
+    end
+    [spacing(ii,:)] = find_spacing(Rxy(ii),XYtoDeg(ii,1),XYtoDeg(ii,2),spacing_1,spacing_2);
 end
-line([0 200], [200 0],'color','k'); 
-line([0 200], [0 200],'color','k');
-text(90,20,'SUPERIOR','fontsize',20);
-text(90,180,'INFERIOR','fontsize',20);
-text(150,100,'TEMPORAL','fontsize',20);
-text(20,100,'NASAL','fontsize',20);
-%% next I have to find which pixels touch which circles to get an rxy coordinate
-
-
+%% reshape spacing matrix into a 2D to match size of generated image
+FilterImg = zeros([800,800]);
+for ii = 1:length(XY)
+    xCoords = XY(ii,1);
+    yCoords = XY(ii,2);
+    FilterImg(xCoords,yCoords) = spacing(ii);
+end
+%% 2D convolution with filter image to add spacing blur  
+newImg_h = conv2(FilterImg,high_freq,'same');
+newImg_l = conv2(FilterImg,low_freq,'same');
+%% This is using the Figure 10 values for mRGCf spacing
+figure;
+colormap('gray');
+subplot(1,2,1); imagesc(high_freq); axis square; axis off; title('original image');
+subplot(1,2,2); imagesc(newImg_h); axis square; axis off; title('Filtered High SF img');
+figure;
+colormap('gray');
+subplot(1,2,1); imagesc(low_freq); axis square; axis off; title('original image');
+subplot(1,2,2); imagesc(newImg_l); axis square; axis off; title('Filtered Low SF img');
+%% Visualize why the img looks mirrored due to conv2
+figure;
+subplot(1,2,1);mesh(low_freq); axis square; axis off; title('original');
+subplot(1,2,2); mesh(newImg_l); axis square; axis off; title('after convolution');
+% since it seems like convolution is to blame for this issue of mirrored
+% image. I am going to try another way...I will scale each individual pixel
+% rather than making a filter and convolving
+%% Scale each pixel rather than convolve
+FilteredImg = zeros([800,800]);
+for ii = 1:length(XY)
+    xCoords = XY(ii,1);
+    yCoords = XY(ii,2);
+    FilteredImg_h(xCoords,yCoords) = spacing(ii)*high_freq(xCoords,yCoords);
+    FilteredImg_l(xCoords,yCoords) = spacing(ii)*low_freq(xCoords,yCoords);
+end
+%% Remove zeros and reshape
+% get new img dims
+rowNum = size(FilteredImg_h,1)-sum(FilteredImg_h(:,1)==0);
+colNum = size(FilteredImg_h,2);
+% remove zeros and reshape
+FilteredImg_h = FilteredImg_h.';
+FilteredImg_l = FilteredImg_l.'; 
+temp_FilteredImg_h = reshape(FilteredImg_h(FilteredImg_h~=0),colNum,rowNum).';
+temp_FilteredImg_l = reshape(FilteredImg_l(FilteredImg_l~=0),colNum,rowNum).';
+% plot new reduced imgs
+figure;
+colormap('gray');
+subplot(1,2,1); imagesc(temp_FilteredImg_l); axis square; axis off; title('Filtered low sf');
+subplot(1,2,2); imagesc(temp_FilteredImg_h); axis square; axis off; title('Filtered high sf');
